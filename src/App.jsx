@@ -23,7 +23,7 @@ import { LessonRunner } from './components/lesson/LessonRunner';
 import ProfileScreen from './components/profile/ProfileScreen';
 import StatsScreen from './components/stats/StatsScreen';
 import TrainingScreen from './components/training/TrainingScreen';
-import WorldSelect from './components/world/WorldSelect'; // NOVO
+import WorldSelect from './components/world/WorldSelect';
 
 // Stories
 import StoriesHub from './components/stories/StoriesHub';
@@ -37,6 +37,7 @@ function AppContent() {
   const [currentSection, setCurrentSection] = useState('home');
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isInLesson, setIsInLesson] = useState(false);
+  const [currentMapId, setCurrentMapId] = useState(0); // NOVO: qual mapa está selecionado
   
   // Stories state
   const [currentStorySection, setCurrentStorySection] = useState('hub');
@@ -191,11 +192,14 @@ function AppContent() {
 
   // === RENDER SCREENS ===
 
-  // WorldSelect (fullscreen) — NOVO
+  // WorldSelect (fullscreen)
   if (currentSection === 'adventure') {
     return (
       <WorldSelect
-        onSelectWorld={() => setCurrentSection('map')}
+        onSelectWorld={(mapId) => {
+          setCurrentMapId(mapId);
+          setCurrentSection('map');
+        }}
         onBack={() => setCurrentSection('home')}
       />
     );
@@ -205,6 +209,7 @@ function AppContent() {
   if (currentSection === 'map') {
     return (
       <MapScreen
+        mapId={currentMapId}
         onSelectNode={handleSelectNode}
         getNodeState={getNodeState}
         getNodeProgress={getNodeProgress}

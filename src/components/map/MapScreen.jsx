@@ -1,30 +1,21 @@
 /**
  * MapScreen - EnglishPlus 2.0
- * 
- * "Là, tout n'est qu'ordre et beauté,
- *  Luxe, calme et volupté."
- *  — Charles Baudelaire
+ * Recebe mapId e carrega o mapa correspondente
  */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
+import { getMapData } from '../../data/maps/mapsConfig';
 
-const NODES_CONFIG = [
-  { id: 1, title: 'O Espelho', theme: 'To Be' },
-  { id: 2, title: 'O Vizinho', theme: 'Present Simple' },
-  { id: 3, title: 'A Tribo', theme: 'Pronomes' },
-  { id: 4, title: 'A Trilha', theme: 'Advérbios' },
-  { id: 5, title: 'O Acampamento', theme: 'Perguntas WH' },
-  { id: 6, title: 'O Rio', theme: 'There is/are' },
-  { id: 7, title: 'O Farol', theme: 'Can' },
-  { id: 8, title: 'A Subida', theme: 'Continuous' },
-  { id: 9, title: 'Os Portões', theme: 'Revisão' },
-  { id: 10, title: 'O Castelo', theme: 'Boss Final', isBoss: true },
-];
-
-const getNodePosition = (index) => {
-  const positions = [0, -60, -80, -40, 20, 70, 80, 40, -20, 0];
-  return positions[index] || 0;
+const getNodePosition = (index, total) => {
+  // Serpentina mais suave para menos nodes
+  const positions5 = [0, -50, -70, -30, 30];
+  const positions10 = [0, -60, -80, -40, 20, 70, 80, 40, -20, 0];
+  
+  if (total <= 5) {
+    return positions5[index] || 0;
+  }
+  return positions10[index] || 0;
 };
 
 const Icons = {
@@ -55,14 +46,13 @@ const Icons = {
   ),
 };
 
-function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef }) {
+function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef, totalNodes }) {
   const isLocked = state === 'locked';
   const isCompleted = state === 'completed';
   const isCurrent = state === 'in_progress' || state === 'unlocked';
   
   const nodeSize = node.isBoss ? 72 : 60;
   
-  // Castelo misterioso - mostra "???" se locked
   const displayTitle = node.isBoss && isLocked ? '???' : node.title;
   const displayTheme = node.isBoss && isLocked ? '???' : node.theme;
   
@@ -79,49 +69,32 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
         className="flex flex-col items-center group"
         style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
       >
-        {/* Container do círculo - efeitos ficam aqui */}
         <div 
           className="relative flex items-center justify-center"
-          style={{ 
-            width: nodeSize + 24, 
-            height: nodeSize + 24,
-          }}
+          style={{ width: nodeSize + 24, height: nodeSize + 24 }}
         >
-          {/* Glow for completed */}
           {isCompleted && (
             <div 
               className="absolute inset-0 rounded-full pointer-events-none"
-              style={{ 
-                background: `radial-gradient(circle, ${COLORS.success}30 0%, transparent 70%)`,
-              }}
+              style={{ background: `radial-gradient(circle, ${COLORS.success}30 0%, transparent 70%)` }}
             />
           )}
 
-          {/* Pulse for current */}
           {isCurrent && (
             <>
               <motion.div 
                 animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute rounded-full"
-                style={{ 
-                  width: nodeSize + 20, 
-                  height: nodeSize + 20,
-                  backgroundColor: COLORS.primary,
-                }}
+                style={{ width: nodeSize + 20, height: nodeSize + 20, backgroundColor: COLORS.primary }}
               />
               <div 
                 className="absolute rounded-full"
-                style={{ 
-                  width: nodeSize + 12, 
-                  height: nodeSize + 12,
-                  backgroundColor: `${COLORS.primary}20`,
-                }}
+                style={{ width: nodeSize + 12, height: nodeSize + 12, backgroundColor: `${COLORS.primary}20` }}
               />
             </>
           )}
           
-          {/* Completed ring with glow */}
           {isCompleted && (
             <div 
               className="absolute rounded-full"
@@ -134,15 +107,10 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             />
           )}
           
-          {/* Progress ring */}
           {isCurrent && progress > 0 && (
             <svg 
               className="absolute"
-              style={{ 
-                width: nodeSize + 12, 
-                height: nodeSize + 12,
-                transform: 'rotate(-90deg)',
-              }}
+              style={{ width: nodeSize + 12, height: nodeSize + 12, transform: 'rotate(-90deg)' }}
             >
               <circle
                 cx={(nodeSize + 12) / 2}
@@ -167,7 +135,6 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             </svg>
           )}
           
-          {/* Node circle */}
           <motion.div 
             whileHover={!isLocked ? { scale: 1.08 } : {}}
             whileTap={!isLocked ? { scale: 0.95 } : {}}
@@ -197,16 +164,10 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             )}
           </motion.div>
           
-          {/* Lock badge */}
           {isLocked && (
             <div 
               className="absolute z-20 rounded-full p-1"
-              style={{ 
-                top: 4,
-                right: 4,
-                backgroundColor: COLORS.textMuted,
-                border: `2px solid ${COLORS.bgApp}`,
-              }}
+              style={{ top: 4, right: 4, backgroundColor: COLORS.textMuted, border: `2px solid ${COLORS.bgApp}` }}
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
                 <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/>
@@ -214,13 +175,11 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             </div>
           )}
           
-          {/* Progress badge */}
           {isCurrent && !isCompleted && (
             <div 
               className="absolute z-20 font-bold rounded-full px-2 py-0.5 text-xs"
               style={{ 
-                bottom: 4,
-                right: 0,
+                bottom: 4, right: 0,
                 backgroundColor: COLORS.surface,
                 color: COLORS.primary,
                 border: `2px solid ${COLORS.primary}`,
@@ -231,7 +190,6 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             </div>
           )}
 
-          {/* Completed sparkle */}
           {isCompleted && (
             <motion.div
               animate={{ rotate: 360 }}
@@ -244,7 +202,6 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
           )}
         </div>
         
-        {/* Title - fora do container do círculo */}
         <div className="mt-1 text-center">
           <div 
             className="text-sm font-medium"
@@ -259,10 +216,7 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
           {(isCurrent || isCompleted || (node.isBoss && isLocked)) && (
             <div 
               className="text-xs mt-0.5" 
-              style={{ 
-                color: COLORS.textMuted,
-                fontStyle: node.isBoss && isLocked ? 'italic' : 'normal',
-              }}
+              style={{ color: COLORS.textMuted, fontStyle: node.isBoss && isLocked ? 'italic' : 'normal' }}
             >
               {displayTheme}
             </div>
@@ -277,7 +231,6 @@ function NodePath({ fromX, toX, isCompleted, isNext }) {
   const height = 50;
   const width = 200;
   const centerX = width / 2;
-  
   const startX = centerX + fromX;
   const endX = centerX + toX;
   
@@ -297,29 +250,29 @@ function NodePath({ fromX, toX, isCompleted, isNext }) {
         <path
           d={`M ${startX} 0 C ${startX} ${height * 0.5}, ${endX} ${height * 0.5}, ${endX} ${height}`}
           fill="none"
-          stroke={isCompleted 
-            ? 'url(#pathGradientCompleted)' 
-            : isNext 
-              ? 'url(#pathGradientActive)' 
-              : COLORS.border}
+          stroke={isCompleted ? 'url(#pathGradientCompleted)' : isNext ? 'url(#pathGradientActive)' : COLORS.border}
           strokeWidth="4"
           strokeDasharray={isCompleted || isNext ? "none" : "8 8"}
           strokeLinecap="round"
           opacity={isCompleted || isNext ? 1 : 0.4}
-          style={{
-            filter: isCompleted ? `drop-shadow(0 0 4px ${COLORS.success}50)` : 'none',
-          }}
+          style={{ filter: isCompleted ? `drop-shadow(0 0 4px ${COLORS.success}50)` : 'none' }}
         />
       </svg>
     </div>
   );
 }
 
-export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress, onBack, onReset }) {
+export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNodeProgress, onBack, onReset }) {
   const scrollRef = useRef(null);
   const activeNodeRef = useRef(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+
+  // Carregar dados do mapa selecionado
+  const mapData = getMapData(mapId);
+  const NODES_CONFIG = mapData?.nodes || [];
+  const mapTitle = mapData?.title || 'Mapa';
+  const mapSubtitle = mapData?.subtitle || '';
 
   const nodesReversed = [...NODES_CONFIG].reverse();
   
@@ -328,30 +281,24 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
     return state === 'in_progress' || state === 'unlocked';
   })?.id;
 
-  // Scroll suave para baixo ao entrar, depois para o node ativo
+  // Reset scroll quando trocar de mapa
+  useEffect(() => {
+    setHasScrolled(false);
+  }, [mapId]);
+
   useEffect(() => {
     if (!scrollRef.current || hasScrolled) return;
     
     const container = scrollRef.current;
-    
-    // Primeiro: scroll instantâneo para o topo (castelo)
     container.scrollTop = 0;
     
-    // Depois de 300ms: scroll suave para baixo (mostra que tem conteúdo)
     const scrollDownTimer = setTimeout(() => {
-      container.scrollTo({
-        top: container.scrollHeight * 0.3,
-        behavior: 'smooth'
-      });
+      container.scrollTo({ top: container.scrollHeight * 0.3, behavior: 'smooth' });
     }, 300);
     
-    // Depois de 1.2s: scroll para o node ativo
     const scrollToActiveTimer = setTimeout(() => {
       if (activeNodeRef.current) {
-        activeNodeRef.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'center'
-        });
+        activeNodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       setHasScrolled(true);
     }, 1200);
@@ -361,6 +308,14 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
       clearTimeout(scrollToActiveTimer);
     };
   }, [hasScrolled, activeNodeId]);
+
+  if (!mapData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: COLORS.bgApp }}>
+        <p style={{ color: COLORS.textMuted }}>Mapa não encontrado</p>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -374,13 +329,9 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
         backgroundSize: '24px 24px, 100% 100%',
       }}
     >
-      {/* Header */}
       <header 
         className="sticky top-0 z-30 backdrop-blur-md border-b"
-        style={{ 
-          backgroundColor: 'rgba(248, 250, 252, 0.9)', 
-          borderColor: COLORS.border,
-        }}
+        style={{ backgroundColor: 'rgba(248, 250, 252, 0.9)', borderColor: COLORS.border }}
       >
         <div className="flex items-center justify-between p-4 max-w-lg mx-auto">
           <button
@@ -394,9 +345,9 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
 
           <div className="text-center">
             <h1 className="font-semibold text-sm uppercase tracking-wide" style={{ color: COLORS.text }}>
-              Mundo 1
+              {mapTitle}
             </h1>
-            <p className="text-xs" style={{ color: COLORS.textMuted }}>Os Primeiros Passos</p>
+            <p className="text-xs" style={{ color: COLORS.textMuted }}>{mapSubtitle}</p>
           </div>
 
           <button
@@ -409,7 +360,6 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
         </div>
       </header>
 
-      {/* Trail */}
       <div 
         ref={scrollRef}
         className="overflow-y-auto pb-40 pt-12"
@@ -419,15 +369,12 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
           {nodesReversed.map((node, index) => {
             const state = getNodeState(node.id);
             const progress = getNodeProgress(node.id);
-            const positionX = getNodePosition(NODES_CONFIG.length - 1 - index);
-            const prevPositionX = index > 0 
-              ? getNodePosition(NODES_CONFIG.length - index) 
-              : 0;
+            const positionX = getNodePosition(NODES_CONFIG.length - 1 - index, NODES_CONFIG.length);
+            const prevPositionX = index > 0 ? getNodePosition(NODES_CONFIG.length - index, NODES_CONFIG.length) : 0;
             
             const nextNode = nodesReversed[index + 1];
             const nextState = nextNode ? getNodeState(nextNode.id) : null;
             const isNextCurrent = nextState === 'in_progress' || nextState === 'unlocked';
-            
             const isActive = node.id === activeNodeId;
             
             return (
@@ -449,12 +396,12 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
                   positionX={positionX}
                   isActive={isActive}
                   nodeRef={activeNodeRef}
+                  totalNodes={NODES_CONFIG.length}
                 />
               </div>
             );
           })}
           
-          {/* Start */}
           <div className="flex flex-col items-center mt-12 mb-8">
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -473,7 +420,6 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
         </div>
       </div>
 
-      {/* Reset Modal */}
       <AnimatePresence>
         {showResetConfirm && (
           <motion.div
@@ -489,12 +435,8 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
               className="rounded-3xl p-6 max-w-sm w-full relative overflow-hidden"
-              style={{ 
-                backgroundColor: COLORS.surface,
-                boxShadow: SHADOWS.cardDark,
-              }}
+              style={{ backgroundColor: COLORS.surface, boxShadow: SHADOWS.cardDark }}
             >
-              {/* Glow */}
               <div
                 className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 60%)' }}
