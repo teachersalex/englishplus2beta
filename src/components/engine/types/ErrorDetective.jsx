@@ -7,6 +7,10 @@ import { EngineButton } from '../EngineButton';
 import { EngineOverlay } from '../EngineOverlay';
 import { EngineHeader } from '../EngineHeader';
 
+/**
+ * ErrorDetective Engine
+ * Encontre a palavra errada na frase
+ */
 export function ErrorDetective({ data, maxAttempts = 3, onComplete }) {
   const { label, title, instruction, sentence, errorWord, correction, feedback } = data;
 

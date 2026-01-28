@@ -7,6 +7,14 @@ import { EngineButton } from '../EngineButton';
 import { EngineOverlay } from '../EngineOverlay';
 import { EngineHeader } from '../EngineHeader';
 
+/**
+ * TrueFalse Engine
+ * Atividade de Verdadeiro ou Falso
+ * 
+ * FIX: Lógica de estados visuais mais robusta
+ * FIX: Encoding UTF-8
+ */
+
 export function TrueFalse({ data, onComplete }) {
   const { label, title, instruction, statement, correct, feedback } = data;
 
@@ -27,16 +35,52 @@ export function TrueFalse({ data, onComplete }) {
     const isSelected = selected === value;
     const isCorrectAnswer = value === correct;
 
-    if (engine.showResult && isCorrectAnswer) {
-      return { backgroundColor: COLORS.successLight, borderColor: COLORS.success, color: '#166534' };
+    // Após mostrar resultado
+    if (engine.showResult) {
+      // Sempre destaca a resposta correta em verde
+      if (isCorrectAnswer) {
+        return { 
+          backgroundColor: COLORS.successLight, 
+          borderColor: COLORS.success, 
+          color: '#166534',
+          opacity: 1,
+        };
+      }
+      // Se foi a selecionada errada, mostra em vermelho
+      if (isSelected && !engine.isCorrect) {
+        return { 
+          backgroundColor: COLORS.errorLight, 
+          borderColor: COLORS.error, 
+          color: '#991B1B',
+          opacity: 1,
+        };
+      }
+      // Opção não selecionada e não é a correta - fica mais apagada
+      return { 
+        backgroundColor: COLORS.surface, 
+        borderColor: COLORS.border, 
+        color: COLORS.textMuted,
+        opacity: 0.5,
+      };
     }
-    if (engine.showResult && isSelected && !engine.isCorrect) {
-      return { backgroundColor: COLORS.errorLight, borderColor: COLORS.error, color: '#991B1B' };
-    }
+
+    // Durante seleção (antes de verificar)
     if (isSelected) {
-      return { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary, color: COLORS.primaryDark };
+      return { 
+        backgroundColor: COLORS.primaryLight, 
+        borderColor: COLORS.primary, 
+        color: COLORS.primaryDark,
+        opacity: 1,
+      };
     }
-    return { backgroundColor: COLORS.surface, borderColor: COLORS.border, color: COLORS.text };
+
+    // Estado default
+    return { 
+      backgroundColor: COLORS.surface, 
+      borderColor: COLORS.border, 
+      color: COLORS.text,
+      opacity: 1,
+    };
   };
 
   return (
@@ -75,19 +119,29 @@ export function TrueFalse({ data, onComplete }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {[true, false].map((value) => (
-          <motion.button
-            key={value.toString()}
-            onClick={() => handleSelect(value)}
-            disabled={engine.showResult}
-            className="p-4 rounded-2xl font-bold text-lg border-2"
-            style={{ ...getButtonStyle(value), boxShadow: SHADOWS.card, cursor: engine.showResult ? 'default' : 'pointer' }}
-            whileHover={!engine.showResult ? { y: -2 } : {}}
-            whileTap={!engine.showResult ? { scale: 0.98 } : {}}
-          >
-            {value ? '✓ Verdadeiro' : '✗ Falso'}
-          </motion.button>
-        ))}
+        {[true, false].map((value) => {
+          const style = getButtonStyle(value);
+          return (
+            <motion.button
+              key={value.toString()}
+              onClick={() => handleSelect(value)}
+              disabled={engine.showResult}
+              className="p-4 rounded-2xl font-bold text-lg border-2"
+              style={{ 
+                backgroundColor: style.backgroundColor,
+                borderColor: style.borderColor,
+                color: style.color,
+                opacity: style.opacity,
+                boxShadow: SHADOWS.card, 
+                cursor: engine.showResult ? 'default' : 'pointer',
+              }}
+              whileHover={!engine.showResult ? { y: -2 } : {}}
+              whileTap={!engine.showResult ? { scale: 0.98 } : {}}
+            >
+              {value ? '✓ Verdadeiro' : '✗ Falso'}
+            </motion.button>
+          );
+        })}
       </div>
     </EngineWrapper>
   );

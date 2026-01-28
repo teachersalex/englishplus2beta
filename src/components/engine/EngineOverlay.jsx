@@ -2,6 +2,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, SHADOWS } from '../../tokens';
 import { EngineButton } from './EngineButton';
 
+/**
+ * EngineOverlay
+ * Overlay de resultado com feedback visual e sonoro
+ * 
+ * FIX: Adicionado som soft_pop.mp3 no botão Continuar
+ * FIX: Encoding UTF-8
+ */
+
+// Som de confirmação
+const playPopSound = () => {
+  try {
+    const audio = new Audio('/audio/soft_pop.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  } catch (e) {}
+};
+
 export function EngineOverlay({
   show = false,
   success = true,
@@ -19,6 +36,12 @@ export function EngineOverlay({
         ? `A resposta certa é: ${correctAnswer}`
         : 'Tente novamente na próxima!'
   );
+
+  // Handler que toca som e chama onContinue
+  const handleContinue = () => {
+    playPopSound();
+    onContinue?.();
+  };
 
   return (
     <AnimatePresence>
@@ -61,7 +84,7 @@ export function EngineOverlay({
             <EngineButton
               label="CONTINUAR"
               variant={success ? 'success' : 'primary'}
-              onClick={onContinue}
+              onClick={handleContinue}
             />
           </div>
         </motion.div>

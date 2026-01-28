@@ -2,12 +2,18 @@
  * useProgress.js
  * Fonte única de verdade para progresso do aluno
  * 
- * "A questão não é atingir a perfeição, mas sim a totalidade."
- * — Carl Jung
+ * ARQUITETURA DE CONQUISTAS:
+ * - earnedAchievements: JÁ CELEBRADAS (badge acende na Home)
+ * - pendingAchievements: NA FILA (aguardando modal)
+ * 
+ * FLUXO:
+ * 1. Detecta novas → adiciona em PENDING
+ * 2. Celebra 1 → move de PENDING para EARNED
+ * 3. Badge só aparece após celebrar
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '../firebase';
 import { checkNewAchievements } from '../data/achievementsData';
 
@@ -17,16 +23,16 @@ const INITIAL_PROGRESS = {
   streak: 0,
   diamonds: 0,
   lastActivity: null,
-  completedLevels: {},    // { 'node1-level1': { accuracy: 95, xp: 50 } }
-  storyProgress: {},      // { 'bad-date': { scores: { ep1: 92 }, average: 92, hasDiamond: true } }
-  earnedAchievements: [], // ['lesson1', 'xp100', ...]
+  completedLevels: {},
+  storyProgress: {},
+  earnedAchievements: [],   // JÁ CELEBRADAS
+  pendingAchievements: [],  // NA FILA
 };
 
 export function useProgress(user) {
   const userId = user?.uid;
   const [progress, setProgress] = useState(INITIAL_PROGRESS);
   const [loading, setLoading] = useState(true);
-  const [newAchievements, setNewAchievements] = useState([]); // Para toast/modal
 
   // Listener em tempo real
   useEffect(() => {
@@ -41,7 +47,6 @@ export function useProgress(user) {
       if (snapshot.exists()) {
         setProgress({ ...INITIAL_PROGRESS, ...snapshot.data() });
       } else {
-        // Primeiro acesso: cria documento
         const initialData = {
           ...INITIAL_PROGRESS,
           email: user?.email || null,
@@ -57,33 +62,59 @@ export function useProgress(user) {
     return unsubscribe;
   }, [userId, user?.email, user?.displayName]);
 
-  // Atualiza Firestore
-  const updateProgress = useCallback(async (updates) => {
-    if (!userId) return;
+  // === ACHIEVEMENTS ===
+
+  /**
+   * Detecta novas conquistas e adiciona na fila PENDING
+   * Retorna array de IDs adicionados (ordenados por prioridade)
+   */
+  const detectAndQueueAchievements = useCallback(async (updatedProgress) => {
+    if (!userId) return [];
+    
+    const earned = updatedProgress.earnedAchievements || progress.earnedAchievements || [];
+    const pending = updatedProgress.pendingAchievements || progress.pendingAchievements || [];
+    
+    // Detecta novas (exclui earned e pending)
+    const newlyUnlocked = checkNewAchievements(updatedProgress, earned, pending);
+    
+    if (newlyUnlocked.length === 0) return [];
+    
+    // Adiciona na fila
     const docRef = doc(db, 'users', userId);
-    await updateDoc(docRef, updates);
+    await updateDoc(docRef, {
+      pendingAchievements: arrayUnion(...newlyUnlocked),
+    });
+    
+    return newlyUnlocked;
+  }, [userId, progress.earnedAchievements, progress.pendingAchievements]);
+
+  /**
+   * Move conquista de PENDING para EARNED (após celebrar com modal)
+   */
+  const celebrateAchievement = useCallback(async (achievementId) => {
+    if (!userId || !achievementId) return;
+    
+    const docRef = doc(db, 'users', userId);
+    await updateDoc(docRef, {
+      pendingAchievements: arrayRemove(achievementId),
+      earnedAchievements: arrayUnion(achievementId),
+    });
   }, [userId]);
 
-  // Checa e salva novas conquistas
-  const checkAndSaveAchievements = useCallback(async (updatedProgress) => {
-    const currentEarned = updatedProgress.earnedAchievements || [];
-    const newlyEarned = checkNewAchievements(updatedProgress, currentEarned);
+  /**
+   * Pega próxima conquista da fila (a de maior prioridade)
+   * Não remove, só retorna
+   */
+  const getNextPendingAchievement = useCallback(() => {
+    const pending = progress.pendingAchievements || [];
+    if (pending.length === 0) return null;
     
-    if (newlyEarned.length > 0) {
-      const allEarned = [...currentEarned, ...newlyEarned];
-      await updateProgress({ earnedAchievements: allEarned });
-      setNewAchievements(newlyEarned); // Trigger toast
-      return newlyEarned;
-    }
-    return [];
-  }, [updateProgress]);
+    // Já vem ordenado por prioridade do checkNewAchievements
+    // Mas se não vier, a primeira é a mais prioritária
+    return pending[0];
+  }, [progress.pendingAchievements]);
 
-  // Limpa notificação de conquistas novas
-  const clearNewAchievements = useCallback(() => {
-    setNewAchievements([]);
-  }, []);
-
-  // === Node Progress ===
+  // === NODE PROGRESS ===
   
   const getNodeState = useCallback((nodeId) => {
     const completedCount = Object.keys(progress.completedLevels)
@@ -113,41 +144,66 @@ export function useProgress(user) {
     return levels.find(level => !isLevelCompleted(nodeId, level.id));
   }, [isLevelCompleted]);
 
+  /**
+   * Completa um level e detecta conquistas
+   * Retorna { newlyUnlocked: string[] }
+   */
   const completeLevel = useCallback(async (nodeId, levelId, result) => {
+    if (!userId) return { newlyUnlocked: [] };
+    
     const key = `node${nodeId}-${levelId}`;
     const xpGained = result.xpEarned || 0;
-    const newXP = progress.xp + xpGained;
-    const newLevel = Math.floor(newXP / 500) + 1;
+    const earnedDiamond = result.earnedDiamond || false;
+    const docRef = doc(db, 'users', userId);
 
-    await updateProgress({
+    // Atualização atômica
+    const updates = {
       [`completedLevels.${key}`]: {
         accuracy: result.accuracy,
         xp: xpGained,
         completedAt: new Date().toISOString(),
       },
-      xp: newXP,
-      level: newLevel,
+      xp: increment(xpGained),
       lastActivity: new Date().toISOString(),
-    });
+    };
 
-    // Checa conquistas com progresso atualizado
+    if (earnedDiamond) {
+      updates.diamonds = increment(1);
+    }
+
+    await updateDoc(docRef, updates);
+
+    // Calcula novo level
+    const newXP = progress.xp + xpGained;
+    const newLevel = Math.floor(newXP / 500) + 1;
+    
+    if (newLevel > progress.level) {
+      await updateDoc(docRef, { level: newLevel });
+    }
+
+    // Simula progresso atualizado para detectar conquistas
     const updatedProgress = {
       ...progress,
+      xp: newXP,
+      level: newLevel,
+      diamonds: (progress.diamonds || 0) + (earnedDiamond ? 1 : 0),
       completedLevels: {
         ...progress.completedLevels,
         [key]: { accuracy: result.accuracy, xp: xpGained },
       },
-      xp: newXP,
-      level: newLevel,
     };
+
+    // Detecta e enfileira conquistas
+    const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
+
+    return { newlyUnlocked, newLevel };
+  }, [userId, progress, detectAndQueueAchievements]);
+
+  // === STORY PROGRESS ===
+
+  const updateStoryProgress = useCallback(async (seriesId, episodeId, score, totalEpisodes) => {
+    if (!userId) return { average: 0, hasDiamond: false, newDiamond: false, newlyUnlocked: [] };
     
-    const newlyEarned = await checkAndSaveAchievements(updatedProgress);
-    return { newAchievements: newlyEarned };
-  }, [progress, updateProgress, checkAndSaveAchievements]);
-
-  // === Story Progress ===
-
-  const updateStoryProgress = useCallback(async (seriesId, episodeId, score) => {
     const currentStory = progress.storyProgress[seriesId] || { scores: {} };
     const newScores = { 
       ...currentStory.scores, 
@@ -157,47 +213,54 @@ export function useProgress(user) {
     const scoreValues = Object.values(newScores);
     const average = Math.round(scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length);
     
-    const hasDiamond = average >= 90;
-    const diamondIncrement = (hasDiamond && !currentStory.hasDiamond) ? 1 : 0;
+    const allComplete = scoreValues.length >= totalEpisodes;
+    const hasDiamond = allComplete && average >= 90;
+    const isNewDiamond = hasDiamond && !currentStory.hasDiamond;
+    
+    const docRef = doc(db, 'users', userId);
 
-    await updateProgress({
+    const updates = {
       [`storyProgress.${seriesId}`]: {
         scores: newScores,
         average,
         hasDiamond,
       },
-      diamonds: progress.diamonds + diamondIncrement,
-    });
+    };
 
-    // Checa conquistas
+    if (isNewDiamond) {
+      updates.diamonds = increment(1);
+    }
+
+    await updateDoc(docRef, updates);
+
+    // Simula progresso atualizado para detectar conquistas
     const updatedProgress = {
       ...progress,
       storyProgress: {
         ...progress.storyProgress,
         [seriesId]: { scores: newScores, average, hasDiamond },
       },
-      diamonds: progress.diamonds + diamondIncrement,
+      diamonds: (progress.diamonds || 0) + (isNewDiamond ? 1 : 0),
     };
-    
-    const newlyEarned = await checkAndSaveAchievements(updatedProgress);
+
+    // Detecta e enfileira conquistas
+    const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
 
     return { 
       average, 
       hasDiamond, 
-      newDiamond: diamondIncrement > 0,
-      newAchievements: newlyEarned,
+      newDiamond: isNewDiamond,
+      newlyUnlocked,
     };
-  }, [progress, updateProgress, checkAndSaveAchievements]);
+  }, [userId, progress, detectAndQueueAchievements]);
 
-  // === Utilities ===
+  // === UTILITIES ===
 
   const earnDiamond = useCallback(async () => {
-    const newDiamonds = progress.diamonds + 1;
-    await updateProgress({ diamonds: newDiamonds });
-    
-    // Checa conquistas
-    await checkAndSaveAchievements({ ...progress, diamonds: newDiamonds });
-  }, [progress, updateProgress, checkAndSaveAchievements]);
+    if (!userId) return;
+    const docRef = doc(db, 'users', userId);
+    await updateDoc(docRef, { diamonds: increment(1) });
+  }, [userId]);
 
   const resetProgress = useCallback(async () => {
     if (!userId) return;
@@ -213,19 +276,24 @@ export function useProgress(user) {
   return {
     progress,
     loading,
+    
     // Node
     getNodeState,
     getNodeProgress,
     isLevelCompleted,
     getNextLevel,
     completeLevel,
+    
     // Story
     updateStoryProgress,
+    
+    // Achievements
+    detectAndQueueAchievements,
+    celebrateAchievement,
+    getNextPendingAchievement,
+    
     // Utilities
     earnDiamond,
     resetProgress,
-    // Achievements
-    newAchievements,
-    clearNewAchievements,
   };
 }

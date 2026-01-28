@@ -12,6 +12,10 @@ function normalizeForComparison(str) {
   return str.trim().replace(/\s+/g, ' ').replace(/[""]/g, '"').replace(/['']/g, "'").toLowerCase();
 }
 
+/**
+ * SentenceBuilder Engine
+ * Monte a frase na ordem correta
+ */
 export function SentenceBuilder({ data, onComplete }) {
   const { label, title, instruction, context, words, correct, alternatives, feedback } = data;
 

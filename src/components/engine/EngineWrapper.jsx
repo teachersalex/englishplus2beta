@@ -1,5 +1,10 @@
 import { COLORS } from '../../tokens';
 
+/**
+ * EngineWrapper
+ * Container comum para todas as engines
+ * Gerencia layout: conteúdo com scroll + footer fixo + overlay
+ */
 export function EngineWrapper({ children, button, overlay, showOverlay = false }) {
   return (
     <div 

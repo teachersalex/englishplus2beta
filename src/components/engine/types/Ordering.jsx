@@ -8,6 +8,14 @@ import { EngineButton } from '../EngineButton';
 import { EngineOverlay } from '../EngineOverlay';
 import { EngineHeader } from '../EngineHeader';
 
+/**
+ * Ordering Engine
+ * Atividade de ordenar itens na sequência correta
+ * 
+ * FIX: Agora permite remover item do slot clicando nele
+ * FIX: Encoding UTF-8
+ */
+
 export function Ordering({ data, onComplete }) {
   const { label, title, instruction, items, feedback } = data;
 
@@ -22,6 +30,7 @@ export function Ordering({ data, onComplete }) {
   const [selected, setSelected] = useState(null);
   const [results, setResults] = useState(null);
 
+  // Clicou em item do banco
   const handleItemClick = (item) => {
     if (engine.showResult) return;
     if (selected?.id === item.id) {
@@ -31,9 +40,25 @@ export function Ordering({ data, onComplete }) {
     }
   };
 
+  // Clicou em slot vazio - adiciona item selecionado
   const handleSlotClick = (slotIndex) => {
-    if (!selected || engine.showResult || slots[slotIndex] !== null) return;
+    if (engine.showResult) return;
 
+    // Se slot já tem item, remove e devolve ao banco
+    if (slots[slotIndex] !== null) {
+      const itemToReturn = slots[slotIndex];
+      const nextSlots = [...slots];
+      nextSlots[slotIndex] = null;
+      setSlots(nextSlots);
+      setBank(prev => [...prev, itemToReturn]);
+      setResults(null); // Reset results se estava mostrando
+      return;
+    }
+
+    // Se não tem item selecionado, ignora
+    if (!selected) return;
+
+    // Adiciona item selecionado ao slot
     const nextBank = bank.filter(i => i.id !== selected.id);
     const nextSlots = [...slots];
     nextSlots[slotIndex] = selected;
@@ -42,6 +67,7 @@ export function Ordering({ data, onComplete }) {
     setSlots(nextSlots);
     setSelected(null);
 
+    // Verifica se completou
     if (nextSlots.every(s => s !== null)) {
       const correct = [];
       const wrong = [];
@@ -114,7 +140,7 @@ export function Ordering({ data, onComplete }) {
       <EngineHeader 
         label={label} 
         title={title} 
-        instruction={instruction || 'Coloque os itens na ordem correta.'}
+        instruction={instruction || 'Coloque os itens na ordem correta. Toque no slot para remover.'}
         defaultTitle="Organize"
       />
 
@@ -130,12 +156,21 @@ export function Ordering({ data, onComplete }) {
               onClick={() => handleSlotClick(index)}
               className="flex-1 min-h-[48px] border-2 border-dashed rounded-2xl flex items-center justify-center p-3 cursor-pointer"
               style={getSlotStyle(index)}
-              whileTap={!engine.showResult && !slots[index] ? { scale: 0.98 } : {}}
+              whileTap={!engine.showResult ? { scale: 0.98 } : {}}
             >
               {slot ? (
-                <span className="font-semibold" style={{ color: COLORS.text }}>{slot.text}</span>
+                <span className="font-semibold flex items-center gap-2" style={{ color: COLORS.text }}>
+                  {slot.text}
+                  {!engine.showResult && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">
+                      ✕
+                    </span>
+                  )}
+                </span>
               ) : (
-                <span style={{ color: COLORS.textMuted }}>Toque para adicionar</span>
+                <span style={{ color: COLORS.textMuted }}>
+                  {selected ? 'Toque para adicionar' : 'Selecione um item'}
+                </span>
               )}
             </motion.div>
           </div>
@@ -167,7 +202,7 @@ export function Ordering({ data, onComplete }) {
           ))}
         </AnimatePresence>
         {bank.length === 0 && !engine.showResult && (
-          <span style={{ color: COLORS.textMuted }}>Todas posicionadas!</span>
+          <span style={{ color: COLORS.textMuted }}>Todas posicionadas! Toque no slot para remover.</span>
         )}
       </div>
     </EngineWrapper>

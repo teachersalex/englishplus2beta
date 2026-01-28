@@ -177,11 +177,11 @@ export const node3Data = {
         {
           type: 'true_false',
           label: 'Fechamento',
-          title: 'Lógica',
+          title: 'Gramática',
           instruction: 'Analise a frase',
-          statement: 'I sleep at the bank.',
+          statement: 'I works every day.',
           correct: false,
-          feedback: { success: { title: 'Falso!', text: 'Gramática ok, mas você não dorme no banco!' } }
+          feedback: { success: { title: 'Falso!', text: 'Com "I" o verbo não leva S. O correto é "I work".' } }
         }
       ]
     }

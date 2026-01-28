@@ -1,5 +1,7 @@
 // src/components/stories/StoriesHub.jsx
 // Visual: PlayStation/Apple - sem flash, profissional
+// FIX: Corrigido path - era stories, agora é storyProgress
+// FIX: Corrigido path - era bestScores, agora é scores
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -184,13 +186,15 @@ export default function StoriesHub({ onSelectSeries, onBack, progress }) {
   }, []);
 
   const getSeriesProgress = (seriesId) => {
-    const storyProgress = progress?.stories?.[seriesId];
+    // FIX: Corrigido path - era progress?.stories, agora é progress?.storyProgress
+    const storyProgress = progress?.storyProgress?.[seriesId];
     if (!storyProgress) return { completed: 0, total: 0, hasDiamond: false, average: null };
     
     const allSeries = [...(seriesByLevel.pillars || []), ...(seriesByLevel.starter || [])];
     const series = allSeries.find(s => s.id === seriesId);
     const total = series?.episodes?.length || 0;
-    const completed = Object.keys(storyProgress.bestScores || {}).length;
+    // FIX: Corrigido path - era bestScores, agora é scores
+    const completed = Object.keys(storyProgress.scores || {}).length;
     
     return {
       completed,

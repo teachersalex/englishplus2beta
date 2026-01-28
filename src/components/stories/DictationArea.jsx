@@ -104,7 +104,7 @@ export function DictationArea({
         <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: COLORS.border }}>
           <div>
             <h3 className="font-bold text-sm" style={{ color: COLORS.text }}>
-              ✍️ Digite o que você ouviu
+              ✏️ Digite o que você ouviu
             </h3>
             <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>
               Ouça quantas vezes precisar e transcreva o áudio
@@ -137,6 +137,10 @@ export function DictationArea({
             value={userText}
             onChange={handleTextChange}
             placeholder="Comece a digitar aqui..."
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="none"
+            autoComplete="off"
             className="w-full p-4 min-h-[200px] resize-none focus:outline-none text-base"
             style={{ 
               color: COLORS.text,

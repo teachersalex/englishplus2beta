@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { dopamineConfig } from '../data/gameSchema';
 
 /**
  * useEngineState
@@ -6,12 +7,18 @@ import { useState, useCallback } from 'react';
  * 
  * Responsabilidade única: gerenciar resultado e payload de conclusão
  * Cada engine mantém sua lógica específica (selected, bank, slots, etc)
+ * 
+ * FIX: Agora usa valores do gameSchema como fonte única de verdade
  */
+
+// Valores padrão do gameSchema
+const DEFAULT_XP_CORRECT = dopamineConfig.xp.activityComplete;
+const DEFAULT_XP_WRONG = Math.round(dopamineConfig.xp.activityComplete * 0.25); // 25% do XP normal
 
 export function useEngineState({ 
   onComplete, 
-  xpCorrect = 20, 
-  xpWrong = 5 
+  xpCorrect = DEFAULT_XP_CORRECT, 
+  xpWrong = DEFAULT_XP_WRONG 
 }) {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);

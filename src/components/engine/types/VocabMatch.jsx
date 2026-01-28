@@ -1,12 +1,20 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { COLORS, SHADOWS } from '../../../tokens';
-import { shuffleArray } from '../../../utils/array';
+import { shuffleUntilDifferent } from '../../../utils/array';
 import { useEngineState } from '../../../hooks/useEngineState';
 import { EngineWrapper } from '../EngineWrapper';
 import { EngineButton } from '../EngineButton';
 import { EngineOverlay } from '../EngineOverlay';
 import { EngineHeader } from '../EngineHeader';
+
+/**
+ * VocabMatch Engine
+ * Conecte pares de vocabulário (PT ↔ EN)
+ * 
+ * FIX: Usando shuffleUntilDifferent para garantir que a coluna direita
+ *      tenha ordem diferente da esquerda
+ */
 
 export function VocabMatch({ data, onComplete }) {
   const { label, title, instruction, pairs, feedback } = data;
@@ -15,7 +23,8 @@ export function VocabMatch({ data, onComplete }) {
     pairs.map((pair, index) => ({ ...pair, id: index })), [pairs]
   );
 
-  const shuffledRight = useMemo(() => shuffleArray(pairsWithId), [pairsWithId]);
+  // FIX: Usar shuffleUntilDifferent ao invés de shuffleArray
+  const shuffledRight = useMemo(() => shuffleUntilDifferent(pairsWithId), [pairsWithId]);
 
   const engine = useEngineState({ onComplete });
   const [selectedLeft, setSelectedLeft] = useState(null);

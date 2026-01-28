@@ -175,11 +175,11 @@ export const node5Data = {
         {
           type: 'true_false',
           label: 'Fechamento',
-          title: 'Lógica',
+          title: 'Gramática',
           instruction: 'Analise',
-          statement: 'I never sleep.',
+          statement: 'She never are late.',
           correct: false,
-          feedback: { success: { title: 'Falso!', text: 'Gramática ok, mas biologicamente impossível!' } }
+          feedback: { success: { title: 'Falso!', text: 'O correto é "She is never late". Com To Be, advérbio vem depois.' } }
         }
       ]
     }

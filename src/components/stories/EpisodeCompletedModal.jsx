@@ -58,7 +58,7 @@ export default function EpisodeCompletedModal({
   // Determina cor e mensagem baseado no score
   const getScoreStyle = () => {
     if (score >= 95) return { color: COLORS.success, bg: COLORS.successLight, emoji: '🎯', msg: 'Excelente!' };
-    if (score >= 80) return { color: COLORS.primary, bg: '#EFF6FF', emoji: '👏', msg: 'Muito bom!' };
+    if (score >= 80) return { color: COLORS.primary, bg: '#EFF6FF', emoji: '👍', msg: 'Muito bom!' };
     if (score >= 60) return { color: COLORS.warning, bg: COLORS.warningLight, emoji: '💪', msg: 'Bom trabalho!' };
     return { color: COLORS.error, bg: COLORS.errorLight, emoji: '📚', msg: 'Continue praticando!' };
   };
@@ -290,7 +290,7 @@ export default function EpisodeCompletedModal({
                     className="flex-1 py-3 px-4 rounded-xl font-bold text-white transition-all hover:brightness-110"
                     style={{ backgroundColor: COLORS.success }}
                   >
-                    Concluir ✓
+                    Concluir ✔
                   </button>
                 )}
               </div>

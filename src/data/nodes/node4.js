@@ -180,11 +180,11 @@ export const node4Data = {
         {
           type: 'true_false',
           label: 'Fechamento',
-          title: 'Lógica',
+          title: 'Gramática',
           instruction: 'Analise',
-          statement: 'A vegan eats meat.',
+          statement: 'My sister speak English.',
           correct: false,
-          feedback: { success: { title: 'Falso!', text: 'Gramática certa (eats), mas vegano não come carne!' } }
+          feedback: { success: { title: 'Falso!', text: 'My sister = She. Precisa do S: "My sister speaks English".' } }
         }
       ]
     }

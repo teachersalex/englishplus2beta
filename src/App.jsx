@@ -1,10 +1,12 @@
 /**
  * App.jsx
- * EnglishPlus 2.0 - Com Firebase
+ * EnglishPlus 2.0 - Arquitetura de Conquistas Redesenhada
  * 
- * FLUXO: Splash → Login → Home
- * 
- * DNA: PlayStation + Apple + Valve
+ * FLUXO DE CONQUISTAS:
+ * 1. completeLevel() detecta e adiciona em PENDING
+ * 2. LessonRunner mostra modal da primeira (mais prioritária)
+ * 3. Após celebrar, celebrateAchievement() move para EARNED
+ * 4. Badge na Home só mostra EARNED
  */
 
 import { useState } from 'react';
@@ -33,7 +35,6 @@ import { node8Data } from './data/nodes/node8';
 import { node9Data } from './data/nodes/node9';
 import { node10Data } from './data/nodes/node10';
 
-// Mapa de nodes
 const nodesData = {
   1: node1Data,
   2: node2Data,
@@ -57,7 +58,7 @@ function AppContent() {
   const [currentStorySection, setCurrentStorySection] = useState('hub');
   const [selectedSeriesId, setSelectedSeriesId] = useState(null);
 
-  // Sistema de progressão (Firebase) - passa user inteiro
+  // Sistema de progressão
   const { 
     progress,
     loading: progressLoading,
@@ -68,6 +69,7 @@ function AppContent() {
     completeLevel,
     resetProgress,
     updateStoryProgress,
+    celebrateAchievement,
   } = useProgress(user);
 
   // Dados do usuário
@@ -136,6 +138,7 @@ function AppContent() {
       <LessonRunner
         lesson={{
           id: level.id,
+          nodeId: nodeId,
           title: node.title,
           theme: node.theme,
           tip: node.tip,
@@ -144,15 +147,18 @@ function AppContent() {
           currentRound: currentRound,
           totalRounds: 3,
         }}
-        onComplete={(result) => {
-          completeLevel(nodeId, level.id, {
+        onComplete={async (result) => {
+          // Salva progresso e detecta conquistas (async)
+          const { newlyUnlocked } = await completeLevel(nodeId, level.id, {
             accuracy: result.accuracy || 0,
             xpEarned: result.xp || 0,
+            earnedDiamond: result.earnedDiamond || false,
           });
-          setIsInLesson(false);
-          setCurrentLesson(null);
-          setCurrentSection('map');
+          
+          // Retorna conquistas para o LessonRunner mostrar
+          return { newlyUnlocked };
         }}
+        onCelebrateAchievement={celebrateAchievement}
         onExit={() => {
           setIsInLesson(false);
           setCurrentLesson(null);
@@ -226,6 +232,7 @@ function AppContent() {
           onBack={handleBackFromPlayer}
           progress={progress}
           onUpdateProgress={updateStoryProgress}
+          onCelebrateAchievement={celebrateAchievement}
         />
       );
     }
@@ -239,7 +246,7 @@ function AppContent() {
     );
   }
 
-  // Layout com navegação adaptativa
+  // Layout com navegação
   return (
     <Layout
       currentSection={currentSection}
@@ -248,7 +255,6 @@ function AppContent() {
       progress={progress}
       onLogout={logout}
     >
-      {/* Home */}
       {currentSection === 'home' && (
         <HomeScreen
           user={userData}
@@ -259,27 +265,24 @@ function AppContent() {
         />
       )}
 
-      {/* Stats */}
       {currentSection === 'stats' && (
         <div className="min-h-screen p-4 md:p-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-4">Estatísticas</h1>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <p className="text-slate-500">Em breve: gráficos de progresso, tempo de estudo, palavras aprendidas...</p>
+            <p className="text-slate-500">Em breve...</p>
           </div>
         </div>
       )}
 
-      {/* Training */}
       {currentSection === 'training' && (
         <div className="min-h-screen p-4 md:p-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-4">Treino Rápido</h1>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <p className="text-slate-500">Em breve: revisão de palavras erradas, flashcards, exercícios de reforço...</p>
+            <p className="text-slate-500">Em breve...</p>
           </div>
         </div>
       )}
 
-      {/* Profile */}
       {currentSection === 'profile' && (
         <div className="min-h-screen p-4 md:p-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-4">Perfil</h1>
@@ -325,12 +328,10 @@ function AppContent() {
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  // Splash primeiro (carregando o app)
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  // Depois login, depois home
   return (
     <AuthGate>
       <AppContent />

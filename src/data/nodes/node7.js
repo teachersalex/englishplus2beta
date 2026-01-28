@@ -98,7 +98,7 @@ export const node7Data = {
         {
           type: 'error_detective',
           label: 'Prática',
-          title: 'Inglês de índio',
+          title: 'Negativa errada',
           instruction: 'Ache o erro',
           sentence: 'I no can go.',
           errorWord: 'no',
@@ -175,11 +175,11 @@ export const node7Data = {
         {
           type: 'true_false',
           label: 'Fechamento',
-          title: 'Lógica',
+          title: 'Gramática',
           instruction: 'Analise',
-          statement: 'A baby can drive a car.',
+          statement: 'She can speaks French.',
           correct: false,
-          feedback: { success: { title: 'Falso!', text: 'Gramática ok, mas bebês não dirigem!' } }
+          feedback: { success: { title: 'Falso!', text: 'Depois de Can, o verbo fica puro: "She can speak".' } }
         }
       ]
     }

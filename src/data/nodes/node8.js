@@ -107,7 +107,7 @@ export const node8Data = {
         {
           type: 'error_detective',
           label: 'Prática',
-          title: 'Inglês de Tarzan',
+          title: 'Verbo engolido',
           instruction: 'Ache o erro',
           sentence: 'She working at the moment.',
           errorWord: 'working',
@@ -175,11 +175,11 @@ export const node8Data = {
         {
           type: 'true_false',
           label: 'Fechamento',
-          title: 'Lógica',
+          title: 'Gramática',
           instruction: 'Analise',
           statement: 'I am wearing shoes.',
           correct: true,
-          feedback: { success: { title: 'Provável!', text: 'Gramática correta: I am wearing (vestindo).' } }
+          feedback: { success: { title: 'Correto!', text: 'Estrutura perfeita: I am + verbo com ING.' } }
         }
       ]
     }
