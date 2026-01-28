@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
 import { TIPS, FireIcon } from './homeData';
 import { getVisibleAchievements, getAchievementStats } from '../../data/achievementsData';
+import AchievementGrid from '../achievements/AchievementGrid';
 
 /**
  * HomeScreen - EnglishPlus 2.0
@@ -139,7 +140,7 @@ export default function HomeScreen({
               </div>
             </div>
 
-            {/* MINHAS CONQUISTAS */}
+            {/* MINHAS CONQUISTAS - Agora com imagens PNG */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: COLORS.textDark }}>
@@ -150,40 +151,13 @@ export default function HomeScreen({
                 </span>
               </div>
 
-              <div className="grid grid-cols-10 gap-2">
-                {visibleAchievements.map((a, i) => {
-                  const earned = earnedAchievements.includes(a.id);
-                  const currentValue = a.getValue(progress);
-                  const percent = Math.min(100, Math.round((currentValue / a.target) * 100));
-
-                  return (
-                    <motion.button
-                      key={a.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.02 }}
-                      whileHover={{ scale: 1.15, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedAchievement(a)}
-                      className="aspect-square rounded-xl flex items-center justify-center text-base relative overflow-hidden"
-                      style={{
-                        backgroundColor: earned ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                        boxShadow: earned ? '0 0 16px rgba(59, 130, 246, 0.3)' : 'none',
-                        filter: earned ? 'none' : 'grayscale(1)',
-                        opacity: earned ? 1 : 0.4,
-                      }}
-                    >
-                      {a.icon}
-                      {!earned && percent > 0 && (
-                        <div
-                          className="absolute bottom-0 left-0 h-1"
-                          style={{ width: `${percent}%`, backgroundColor: COLORS.primary }}
-                        />
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
+              {/* NOVO: Usando AchievementGrid com imagens */}
+              <AchievementGrid
+                achievements={visibleAchievements}
+                earnedAchievements={earnedAchievements}
+                progress={progress}
+                onSelectAchievement={setSelectedAchievement}
+              />
             </div>
           </div>
         </motion.section>
@@ -226,7 +200,7 @@ export default function HomeScreen({
             />
 
             <div className="relative z-10">
-              {/* Icon — igual ao Modo História */}
+              {/* Icon */}
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
@@ -306,7 +280,7 @@ export default function HomeScreen({
                 Treine seu Listening
               </h3>
 
-              {/* Play button — igual ao Modo Aventura */}
+              {/* Play button */}
               <div className="flex items-center gap-2 mt-5 text-sm font-bold text-violet-200/80 group-hover:gap-3 transition-all">
                 <div 
                   className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -376,7 +350,7 @@ export default function HomeScreen({
         <div className="h-24 md:h-0" />
       </div>
 
-      {/* Modal de Conquista */}
+      {/* Modal de Conquista - Atualizado para imagens */}
       <AnimatePresence>
         {selectedAchievement && (
           <motion.div
@@ -407,15 +381,32 @@ export default function HomeScreen({
                 const earned = earnedAchievements.includes(a.id);
                 const currentValue = a.getValue(progress);
                 const percent = Math.min(100, Math.round((currentValue / a.target) * 100));
+                
+                // Mapeamento de ícones
+                const iconMap = {
+                  lesson1: 'shield', node1: 'castle', lesson6: 'book',
+                  node3: 'map', perfect5: 'target', node5: 'globe',
+                  story1: 'music', xp500: 'bolt', level5: 'rocket',
+                  diamond10: 'diamond', node7: 'mountain', node10: 'star',
+                  master: 'trophy',
+                };
+                const iconName = iconMap[a.id] || 'shield';
 
                 return (
                   <div className="relative z-10">
-                    <div
-                      className="text-5xl mb-4"
-                      style={{ filter: earned ? 'none' : 'grayscale(0.8)', opacity: earned ? 1 : 0.5 }}
-                    >
-                      {a.icon}
+                    {/* Imagem do ícone */}
+                    <div className="mb-4 flex justify-center">
+                      <img
+                        src={`/achievements/${iconName}.png`}
+                        alt={a.title}
+                        className="w-24 h-24 object-contain"
+                        style={{ 
+                          filter: earned ? 'none' : 'grayscale(0.8)', 
+                          opacity: earned ? 1 : 0.5 
+                        }}
+                      />
                     </div>
+                    
                     <h3 className="text-xl font-bold mb-1" style={{ color: COLORS.text }}>
                       {a.title}
                     </h3>
@@ -445,7 +436,7 @@ export default function HomeScreen({
                       className="text-sm font-semibold mb-4"
                       style={{ color: earned ? COLORS.success : COLORS.primary }}
                     >
-                      {earned ? '✓ Conquistado!' : `${percent}% completo`}
+                      {earned ? 'Conquistado!' : `${percent}% completo`}
                     </p>
 
                     <button
