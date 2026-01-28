@@ -7,7 +7,8 @@ import { typingSound } from '../../utils/TypingSoundEngine';
 /**
  * DictationArea
  * Área de ditado: Input → Resultado
- * Responsabilidade única: captura e feedback de transcrição
+ * 
+ * FIX: Adicionado suporte a prop `disabled` para bloquear interação quando modal está ativo
  */
 
 export function DictationArea({
@@ -16,6 +17,7 @@ export function DictationArea({
   onRetry,
   onNext,
   isLastEpisode,
+  disabled = false, // ← NOVO: bloqueia interação
 }) {
   const [userText, setUserText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -23,7 +25,6 @@ export function DictationArea({
   const textareaRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Inicializa som de digitação
   useEffect(() => {
     const initSound = async () => {
       await typingSound.init();
@@ -45,7 +46,6 @@ export function DictationArea({
     };
   }, []);
 
-  // Reset quando feedback muda para null (retry)
   useEffect(() => {
     if (feedback === null) {
       setUserText('');
@@ -55,6 +55,8 @@ export function DictationArea({
   }, [feedback]);
 
   const handleTextChange = useCallback((e) => {
+    if (disabled) return; // ← Bloqueia quando desabilitado
+    
     const newText = e.target.value;
     const isAddingChar = newText.length > userText.length;
     
@@ -67,21 +69,28 @@ export function DictationArea({
     setIsTyping(true);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 150);
-  }, [userText, typingSoundEnabled]);
+  }, [userText, typingSoundEnabled, disabled]);
 
   const toggleTypingSound = () => {
+    if (disabled) return;
     const newState = typingSound.toggle();
     setTypingSoundEnabled(newState);
   };
 
   const handleCheck = () => {
-    if (!userText.trim()) return;
+    if (disabled || !userText.trim()) return;
     onCheck(userText);
   };
 
   const handleRetry = () => {
+    if (disabled) return;
     setUserText('');
     onRetry();
+  };
+
+  const handleNext = () => {
+    if (disabled) return;
+    onNext();
   };
 
   const wordCount = userText.trim() ? userText.trim().split(/\s+/).length : 0;
@@ -98,6 +107,8 @@ export function DictationArea({
         style={{ 
           backgroundColor: COLORS.surface, 
           border: `2px solid ${COLORS.border}`,
+          opacity: disabled ? 0.5 : 1, // ← Visual de desabilitado
+          pointerEvents: disabled ? 'none' : 'auto', // ← Bloqueia cliques
         }}
       >
         {/* Header */}
@@ -111,10 +122,10 @@ export function DictationArea({
             </p>
           </div>
           
-          {/* Sound Toggle */}
           <button
             onClick={toggleTypingSound}
-            className="p-2 rounded-lg transition-colors hover:bg-slate-100"
+            disabled={disabled}
+            className="p-2 rounded-lg transition-colors hover:bg-slate-100 disabled:opacity-50"
             title={typingSoundEnabled ? 'Som ligado' : 'Som desligado'}
           >
             {typingSoundEnabled ? (
@@ -136,12 +147,13 @@ export function DictationArea({
             ref={textareaRef}
             value={userText}
             onChange={handleTextChange}
+            disabled={disabled}
             placeholder="Comece a digitar aqui..."
             spellCheck={false}
             autoCorrect="off"
             autoCapitalize="none"
             autoComplete="off"
-            className="w-full p-4 min-h-[200px] resize-none focus:outline-none text-base"
+            className="w-full p-4 min-h-[200px] resize-none focus:outline-none text-base disabled:bg-gray-50"
             style={{ 
               color: COLORS.text,
               fontFamily: 'Georgia, serif',
@@ -149,7 +161,6 @@ export function DictationArea({
             }}
           />
           
-          {/* Typing Indicator */}
           <AnimatePresence>
             {isTyping && (
               <motion.div
@@ -174,8 +185,9 @@ export function DictationArea({
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                onClick={() => setUserText('')}
-                className="px-4 py-2 text-sm font-medium rounded-xl transition-colors"
+                onClick={() => !disabled && setUserText('')}
+                disabled={disabled}
+                className="px-4 py-2 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
                 style={{ color: COLORS.textMuted }}
               >
                 Limpar
@@ -183,14 +195,14 @@ export function DictationArea({
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={disabled ? {} : { scale: 1.02 }}
+              whileTap={disabled ? {} : { scale: 0.98 }}
               onClick={handleCheck}
-              disabled={!userText.trim()}
+              disabled={disabled || !userText.trim()}
               className="px-6 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-50"
               style={{ 
-                backgroundColor: userText.trim() ? COLORS.primary : COLORS.textMuted,
-                boxShadow: userText.trim() ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
+                backgroundColor: userText.trim() && !disabled ? COLORS.primary : COLORS.textMuted,
+                boxShadow: userText.trim() && !disabled ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
               }}
             >
               Verificar
@@ -221,7 +233,12 @@ export function DictationArea({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className="rounded-2xl overflow-hidden shadow-sm"
-      style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+      style={{ 
+        backgroundColor: COLORS.surface, 
+        border: `1px solid ${COLORS.border}`,
+        opacity: disabled ? 0.5 : 1,
+        pointerEvents: disabled ? 'none' : 'auto',
+      }}
     >
       {/* Score Header */}
       <div className="p-5" style={{ background: scoreColor }}>
@@ -292,7 +309,6 @@ export function DictationArea({
                 </span>
               );
             }
-            // wrong
             return (
               <span key={idx} className="inline-flex items-baseline mx-0.5">
                 <span className="line-through" style={{ color: COLORS.error }}>{item.word}</span>
@@ -326,10 +342,11 @@ export function DictationArea({
       {/* Actions */}
       <div className="p-4 border-t flex gap-3" style={{ borderColor: COLORS.border }}>
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={disabled ? {} : { scale: 1.02 }}
+          whileTap={disabled ? {} : { scale: 0.98 }}
           onClick={handleRetry}
-          className="flex-1 py-3 rounded-xl font-bold transition-all"
+          disabled={disabled}
+          className="flex-1 py-3 rounded-xl font-bold transition-all disabled:opacity-50"
           style={{ 
             backgroundColor: COLORS.background,
             color: COLORS.text,
@@ -340,13 +357,14 @@ export function DictationArea({
         </motion.button>
 
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onNext}
-          className="flex-1 py-3 rounded-xl font-bold text-white transition-all"
+          whileHover={disabled ? {} : { scale: 1.02 }}
+          whileTap={disabled ? {} : { scale: 0.98 }}
+          onClick={handleNext}
+          disabled={disabled}
+          className="flex-1 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-50"
           style={{ 
             backgroundColor: COLORS.primary,
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+            boxShadow: disabled ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.4)',
           }}
         >
           {isLastEpisode ? 'Concluir' : 'Próximo Episódio'}

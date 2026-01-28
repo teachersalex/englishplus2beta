@@ -1,6 +1,7 @@
 // src/components/stories/EpisodeCompletedModal.jsx
 // Modal de celebração quando completa um episódio
-// Visual: PlayStation/Apple - profissional e motivador
+// 
+// FIX: Overlay agora bloqueia cliques em vez de fechar modal
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,13 +25,11 @@ export default function EpisodeCompletedModal({
   onNextEpisode,
   onBackToSeries,
   onRetry,
-  // Dados do episódio
   score,
   episodeTitle,
   episodeNumber,
   totalEpisodes,
   seriesTitle,
-  // Dados do progresso
   isNewRecord = false,
   previousBest = 0,
   seriesAverage = null,
@@ -38,7 +37,6 @@ export default function EpisodeCompletedModal({
 }) {
   const [phase, setPhase] = useState(0);
   
-  // Animação em fases
   useEffect(() => {
     if (!isOpen) {
       setPhase(0);
@@ -46,16 +44,15 @@ export default function EpisodeCompletedModal({
     }
     
     const timers = [
-      setTimeout(() => setPhase(1), 100),   // Aparece
-      setTimeout(() => setPhase(2), 400),   // Score
-      setTimeout(() => setPhase(3), 800),   // Stats
-      setTimeout(() => setPhase(4), 1200),  // Botões
+      setTimeout(() => setPhase(1), 100),
+      setTimeout(() => setPhase(2), 400),
+      setTimeout(() => setPhase(3), 800),
+      setTimeout(() => setPhase(4), 1200),
     ];
     
     return () => timers.forEach(clearTimeout);
   }, [isOpen]);
 
-  // Determina cor e mensagem baseado no score
   const getScoreStyle = () => {
     if (score >= 95) return { color: COLORS.success, bg: COLORS.successLight, emoji: '🎯', msg: 'Excelente!' };
     if (score >= 80) return { color: COLORS.primary, bg: '#EFF6FF', emoji: '👍', msg: 'Muito bom!' };
@@ -76,7 +73,8 @@ export default function EpisodeCompletedModal({
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-        onClick={onClose}
+        // ★ FIX: NÃO fecha ao clicar fora - apenas bloqueia propagação
+        onClick={(e) => e.stopPropagation()}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -94,7 +92,6 @@ export default function EpisodeCompletedModal({
               background: `linear-gradient(135deg, ${scoreStyle.color}20, ${scoreStyle.color}10)`,
             }}
           >
-            {/* Emoji animado */}
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={phase >= 1 ? { scale: 1, rotate: 0 } : {}}
@@ -104,7 +101,6 @@ export default function EpisodeCompletedModal({
               {scoreStyle.emoji}
             </motion.div>
             
-            {/* Título */}
             <motion.h2
               initial={{ opacity: 0, y: 10 }}
               animate={phase >= 1 ? { opacity: 1, y: 0 } : {}}
@@ -114,7 +110,6 @@ export default function EpisodeCompletedModal({
               Episódio Completo!
             </motion.h2>
             
-            {/* Subtítulo */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={phase >= 1 ? { opacity: 1 } : {}}
@@ -143,7 +138,6 @@ export default function EpisodeCompletedModal({
                 {score}%
               </p>
               
-              {/* New Record badge */}
               {isNewRecord && previousBest > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -162,7 +156,6 @@ export default function EpisodeCompletedModal({
               animate={phase >= 3 ? { opacity: 1, y: 0 } : {}}
               className="grid grid-cols-2 gap-3 mb-4"
             >
-              {/* Progresso na série */}
               <div 
                 className="rounded-xl p-3 text-center"
                 style={{ backgroundColor: '#F1F5F9' }}
@@ -178,7 +171,6 @@ export default function EpisodeCompletedModal({
                 </p>
               </div>
               
-              {/* Média da série */}
               <div 
                 className="rounded-xl p-3 text-center"
                 style={{ backgroundColor: '#F1F5F9' }}
@@ -260,9 +252,7 @@ export default function EpisodeCompletedModal({
               animate={phase >= 4 ? { opacity: 1, y: 0 } : {}}
               className="space-y-2"
             >
-              {/* Linha principal */}
               <div className="flex gap-2">
-                {/* Tentar Novamente - só se score < 95% */}
                 {score < 95 && onRetry && (
                   <button
                     onClick={onRetry}
@@ -286,7 +276,7 @@ export default function EpisodeCompletedModal({
                   </button>
                 ) : (
                   <button
-                    onClick={onClose}
+                    onClick={onBackToSeries}
                     className="flex-1 py-3 px-4 rounded-xl font-bold text-white transition-all hover:brightness-110"
                     style={{ backgroundColor: COLORS.success }}
                   >
@@ -295,7 +285,6 @@ export default function EpisodeCompletedModal({
                 )}
               </div>
               
-              {/* Ver Série - secundário */}
               <button
                 onClick={onBackToSeries}
                 className="w-full py-2 px-4 rounded-xl text-sm font-medium transition-colors"

@@ -2,11 +2,7 @@
  * EpisodePlayer.jsx
  * Player de histórias com sistema de conquistas
  * 
- * FLUXO: Mesmo do LessonRunner
- * 1. Completa ditado → updateStoryProgress detecta conquistas
- * 2. Se diamond → DiamondModal primeiro
- * 3. Se achievement → AchievementModal
- * 4. Celebra → move para EARNED → EpisodeCompletedModal
+ * FIX: Bloqueio de cliques quando modal está ativo
  */
 
 import { useState, useEffect } from 'react';
@@ -24,9 +20,8 @@ import AchievementCelebrationModal from '../achievements/AchievementCelebrationM
 import { SavingOverlay } from '../feedback/SavingOverlay';
 import EpisodeCompletedModal from './EpisodeCompletedModal';
 
-const MODAL_DELAY = 500; // Tempo curto para ver o diff antes do modal
+const MODAL_DELAY = 500;
 
-// Som pop para transições
 const playPopSound = () => {
   try {
     const popAudio = new Audio('/audio/pop_sfx.mp3');
@@ -46,10 +41,7 @@ export default function EpisodePlayer({
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [feedback, setFeedback] = useState(null);
   
-  // Estados de celebração
   const [celebrationPhase, setCelebrationPhase] = useState('dictation');
-  // Phases: 'dictation' | 'diamond' | 'saving' | 'achievement' | 'episode'
-  
   const [savingMessage, setSavingMessage] = useState('');
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [episodeModalData, setEpisodeModalData] = useState(null);
@@ -61,7 +53,9 @@ export default function EpisodePlayer({
 
   const audio = useAudioPlayer(episode?.audioUrl);
 
-  // Reset quando muda de episódio
+  // ★ CHECA SE MODAL ESTÁ ATIVO - bloqueia interação
+  const isModalActive = celebrationPhase !== 'dictation';
+
   useEffect(() => {
     setFeedback(null);
     setCelebrationPhase('dictation');
@@ -70,20 +64,17 @@ export default function EpisodePlayer({
     setAchievementIdToSave(null);
   }, [currentEpisodeIndex, seriesId]);
 
-  // Verificar ditado
   const handleCheck = async (userText) => {
     if (!userText.trim() || !episode) return;
 
     const result = calculateDiff(episode.text, userText, episode.title);
     setFeedback(result);
 
-    // Dados atuais (LOCAL - não espera Firestore)
     const storyProgress = progress?.storyProgress?.[seriesId] || {};
     const previousBest = storyProgress.scores?.[episode.id] || 0;
     const completedCount = Object.keys(storyProgress.scores || {}).length + 
       (storyProgress.scores?.[episode.id] ? 0 : 1);
     
-    // Calcula média LOCAL
     const allScores = { 
       ...(storyProgress.scores || {}), 
       [episode.id]: Math.max(result.score, previousBest) 
@@ -93,12 +84,10 @@ export default function EpisodePlayer({
       scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length
     );
 
-    // Checa se VAI ganhar diamante (cálculo local)
     const willEarnDiamond = completedCount >= totalEpisodes && 
                             currentAverage >= 90 && 
                             !storyProgress.hasDiamond;
     
-    // Dados pro modal (IMEDIATO - não espera salvamento)
     setEpisodeModalData({
       score: result.score,
       episodeTitle: episode.title,
@@ -112,7 +101,6 @@ export default function EpisodePlayer({
       earnedDiamond: willEarnDiamond,
     });
 
-    // Mostra modal RÁPIDO (delay curto só pra ver o diff)
     setTimeout(() => {
       if (willEarnDiamond) {
         setCelebrationPhase('diamond');
@@ -121,7 +109,6 @@ export default function EpisodePlayer({
       }
     }, MODAL_DELAY);
 
-    // Salva em PARALELO (não bloqueia o modal)
     if (onUpdateProgress) {
       try {
         const updateResult = await onUpdateProgress(
@@ -131,7 +118,6 @@ export default function EpisodePlayer({
           totalEpisodes
         );
         
-        // Se detectou conquista, guarda pra mostrar depois
         if (updateResult?.newlyUnlocked?.length > 0) {
           const achievementId = updateResult.newlyUnlocked[0];
           const achievement = getAchievementById(achievementId);
@@ -144,25 +130,20 @@ export default function EpisodePlayer({
     }
   };
 
-  // Diamond modal fechou - vai pro episode modal
   const handleDiamondComplete = () => {
     setCelebrationPhase('episode');
   };
 
-  // Achievement modal fechou - agora sim avança
   const handleAchievementComplete = async () => {
     if (achievementIdToSave && onCelebrateAchievement) {
       setSavingMessage('Registrando conquista...');
       setCelebrationPhase('saving');
       
       await onCelebrateAchievement(achievementIdToSave);
-      
       await new Promise(resolve => setTimeout(resolve, 800));
     }
     
     playPopSound();
-    
-    // Limpa e avança
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     setAchievementIdToSave(null);
@@ -174,7 +155,6 @@ export default function EpisodePlayer({
     }
   };
 
-  // Retry
   const handleRetry = () => {
     playPopSound();
     setFeedback(null);
@@ -183,11 +163,9 @@ export default function EpisodePlayer({
     setAchievementIdToSave(null);
   };
 
-  // Next episode - checa se tem conquista pendente
   const handleNext = async () => {
     playPopSound();
     
-    // Se tem conquista pendente, mostra modal antes de avançar
     if (currentAchievement && achievementIdToSave) {
       setCelebrationPhase('achievement');
       return;
@@ -203,11 +181,9 @@ export default function EpisodePlayer({
     }
   };
 
-  // Back to series - checa se tem conquista pendente
   const handleBackToSeries = () => {
     playPopSound();
     
-    // Se tem conquista pendente, mostra modal antes de voltar
     if (currentAchievement && achievementIdToSave) {
       setCelebrationPhase('achievement');
       return;
@@ -217,7 +193,6 @@ export default function EpisodePlayer({
     onBack?.();
   };
 
-  // Guard
   if (!series || !episode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: COLORS.background }}>
@@ -236,7 +211,8 @@ export default function EpisodePlayer({
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+            disabled={isModalActive}
+            className="p-2 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -286,6 +262,7 @@ export default function EpisodePlayer({
             onRetry={handleRetry}
             onNext={handleNext}
             isLastEpisode={isLastEpisode}
+            disabled={isModalActive}
           />
         </AnimatePresence>
 
@@ -331,8 +308,9 @@ export default function EpisodePlayer({
                 <motion.button
                   key={ep.id}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setCurrentEpisodeIndex(idx)}
-                  className="w-full p-3 rounded-xl flex items-center gap-3 transition-colors"
+                  onClick={() => !isModalActive && setCurrentEpisodeIndex(idx)}
+                  disabled={isModalActive}
+                  className="w-full p-3 rounded-xl flex items-center gap-3 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                   style={{ 
                     backgroundColor: isActive ? COLORS.primaryLight : COLORS.surface,
                     border: isActive ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
@@ -371,7 +349,20 @@ export default function EpisodePlayer({
         <div className="h-20 md:h-8" />
       </main>
 
-      {/* === CELEBRATION MODALS === */}
+      {/* ★★★ BLOQUEADOR DE CLIQUES - z-40 fica ABAIXO dos modals (z-50) ★★★ */}
+      <AnimatePresence>
+        {isModalActive && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* === CELEBRATION MODALS (z-50) === */}
 
       <SavingOverlay 
         isVisible={celebrationPhase === 'saving'} 
