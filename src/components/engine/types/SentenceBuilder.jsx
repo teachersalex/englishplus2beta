@@ -33,9 +33,12 @@ export function SentenceBuilder({ data, onComplete }) {
   const [dropzone, setDropzone] = useState([]);
   const [bank, setBank] = useState(shuffledWords);
   const [dropzoneState, setDropzoneState] = useState('empty');
+  const [locked, setLocked] = useState(false);
 
   const handleWordClick = (wordObj, fromDropzone) => {
-    if (engine.showResult) return;
+    if (engine.showResult || locked) return;
+    setLocked(true);
+    setTimeout(() => setLocked(false), 150);
 
     if (fromDropzone) {
       setDropzone(prev => prev.filter(w => w.id !== wordObj.id));

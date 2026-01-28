@@ -62,6 +62,10 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
   
   const nodeSize = node.isBoss ? 72 : 60;
   
+  // Castelo misterioso - mostra "???" se locked
+  const displayTitle = node.isBoss && isLocked ? '???' : node.title;
+  const displayTheme = node.isBoss && isLocked ? '???' : node.theme;
+  
   return (
     <motion.div 
       ref={isActive ? nodeRef : null}
@@ -247,13 +251,20 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef 
             style={{ 
               color: isLocked ? COLORS.textMuted : COLORS.text,
               opacity: isLocked ? 0.6 : 1,
+              fontStyle: node.isBoss && isLocked ? 'italic' : 'normal',
             }}
           >
-            {node.title}
+            {displayTitle}
           </div>
-          {(isCurrent || isCompleted) && (
-            <div className="text-xs mt-0.5" style={{ color: COLORS.textMuted }}>
-              {node.theme}
+          {(isCurrent || isCompleted || (node.isBoss && isLocked)) && (
+            <div 
+              className="text-xs mt-0.5" 
+              style={{ 
+                color: COLORS.textMuted,
+                fontStyle: node.isBoss && isLocked ? 'italic' : 'normal',
+              }}
+            >
+              {displayTheme}
             </div>
           )}
         </div>
@@ -308,6 +319,7 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
   const scrollRef = useRef(null);
   const activeNodeRef = useRef(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const nodesReversed = [...NODES_CONFIG].reverse();
   
@@ -316,15 +328,39 @@ export default function MapScreen({ onSelectNode, getNodeState, getNodeProgress,
     return state === 'in_progress' || state === 'unlocked';
   })?.id;
 
+  // Scroll suave para baixo ao entrar, depois para o node ativo
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      activeNodeRef.current?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'center'
+    if (!scrollRef.current || hasScrolled) return;
+    
+    const container = scrollRef.current;
+    
+    // Primeiro: scroll instantâneo para o topo (castelo)
+    container.scrollTop = 0;
+    
+    // Depois de 300ms: scroll suave para baixo (mostra que tem conteúdo)
+    const scrollDownTimer = setTimeout(() => {
+      container.scrollTo({
+        top: container.scrollHeight * 0.3,
+        behavior: 'smooth'
       });
     }, 300);
-    return () => clearTimeout(timeout);
-  }, [activeNodeId]);
+    
+    // Depois de 1.2s: scroll para o node ativo
+    const scrollToActiveTimer = setTimeout(() => {
+      if (activeNodeRef.current) {
+        activeNodeRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+      setHasScrolled(true);
+    }, 1200);
+    
+    return () => {
+      clearTimeout(scrollDownTimer);
+      clearTimeout(scrollToActiveTimer);
+    };
+  }, [hasScrolled, activeNodeId]);
 
   return (
     <div 

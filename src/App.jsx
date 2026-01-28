@@ -23,6 +23,7 @@ import { LessonRunner } from './components/lesson/LessonRunner';
 import ProfileScreen from './components/profile/ProfileScreen';
 import StatsScreen from './components/stats/StatsScreen';
 import TrainingScreen from './components/training/TrainingScreen';
+import WorldSelect from './components/world/WorldSelect'; // NOVO
 
 // Stories
 import StoriesHub from './components/stories/StoriesHub';
@@ -190,15 +191,24 @@ function AppContent() {
 
   // === RENDER SCREENS ===
 
+  // WorldSelect (fullscreen) — NOVO
+  if (currentSection === 'adventure') {
+    return (
+      <WorldSelect
+        onSelectWorld={() => setCurrentSection('map')}
+        onBack={() => setCurrentSection('home')}
+      />
+    );
+  }
+
   // Mapa (fullscreen)
   if (currentSection === 'map') {
     return (
       <MapScreen
-        mapId="map-1"
+        onSelectNode={handleSelectNode}
         getNodeState={getNodeState}
         getNodeProgress={getNodeProgress}
-        onSelectNode={handleSelectNode}
-        onBack={() => setCurrentSection('home')}
+        onBack={() => setCurrentSection('adventure')}
         onReset={resetProgress}
       />
     );

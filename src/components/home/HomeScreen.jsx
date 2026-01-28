@@ -172,7 +172,7 @@ export default function HomeScreen({
             transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02, y: -3 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => onNavigate?.('map')}
+            onClick={() => onNavigate?.('adventure')}
             className="md:col-span-3 text-left rounded-3xl p-6 relative overflow-hidden group"
             style={{
               background: GRADIENTS.blue,
