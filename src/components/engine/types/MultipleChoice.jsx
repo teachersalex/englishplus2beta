@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, SHADOWS } from '../../../tokens';
 import { useEngineState } from '../../../hooks/useEngineState';
 import { EngineWrapper } from '../EngineWrapper';
@@ -14,6 +14,8 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
   const [selected, setSelected] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const [disabled, setDisabled] = useState([]);
+  const [showTryAgain, setShowTryAgain] = useState(false);
+  const [shakeIndex, setShakeIndex] = useState(null);
 
   const correctOption = useMemo(() => options?.find(opt => opt.correct), [options]);
   const correctIndex = useMemo(() => options?.findIndex(opt => opt.correct) ?? -1, [options]);
@@ -38,6 +40,7 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
   const handleSelect = (index) => {
     if (engine.showResult || disabled.includes(index)) return;
     setSelected(index);
+    setShowTryAgain(false);
   };
 
   const handleVerify = () => {
@@ -50,6 +53,11 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
+      
+      // Shake animation na opção errada
+      setShakeIndex(selected);
+      setTimeout(() => setShakeIndex(null), 500);
+      
       setDisabled(prev => [...prev, selected]);
       engine.addWrong();
 
@@ -58,6 +66,7 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
         setSelected(correctIndex);
       } else {
         setSelected(null);
+        setShowTryAgain(true);
       }
     }
   };
@@ -71,13 +80,15 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
       return { backgroundColor: COLORS.successLight, borderColor: COLORS.success, color: '#166534' };
     }
     if (isDisabled) {
-      return { backgroundColor: COLORS.border, borderColor: COLORS.border, color: COLORS.textMuted, opacity: 0.5 };
+      return { backgroundColor: '#FEE2E2', borderColor: '#FECACA', color: '#991B1B', opacity: 0.6 };
     }
     if (isSelected) {
       return { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary, color: COLORS.primaryDark };
     }
     return { backgroundColor: COLORS.surface, borderColor: COLORS.border, color: COLORS.text };
   };
+
+  const remainingAttempts = maxAttempts - attempts;
 
   return (
     <EngineWrapper
@@ -116,6 +127,26 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
         </div>
       )}
 
+      {/* Feedback de tentativa errada */}
+      <AnimatePresence>
+        {showTryAgain && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-4 p-3 rounded-xl text-center"
+            style={{ backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}
+          >
+            <p className="font-medium" style={{ color: '#92400E' }}>
+              Não é essa! Tente novamente.
+            </p>
+            <p className="text-sm mt-1" style={{ color: '#A16207' }}>
+              {remainingAttempts === 1 ? 'Última tentativa!' : `${remainingAttempts} tentativas restantes`}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="space-y-3">
         {options.map((option, index) => (
           <motion.button
@@ -123,9 +154,15 @@ export function MultipleChoice({ data, maxAttempts = 2, onComplete }) {
             onClick={() => handleSelect(index)}
             disabled={engine.showResult || disabled.includes(index)}
             className="w-full p-4 rounded-2xl text-left font-semibold border-2"
-            style={{ ...getOptionStyle(index), boxShadow: SHADOWS.card, cursor: engine.showResult || disabled.includes(index) ? 'default' : 'pointer' }}
+            style={{ 
+              ...getOptionStyle(index), 
+              boxShadow: SHADOWS.card, 
+              cursor: engine.showResult || disabled.includes(index) ? 'not-allowed' : 'pointer' 
+            }}
             whileHover={!engine.showResult && !disabled.includes(index) ? { y: -2 } : {}}
             whileTap={!engine.showResult && !disabled.includes(index) ? { scale: 0.98 } : {}}
+            animate={shakeIndex === index ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+            transition={shakeIndex === index ? { duration: 0.4 } : {}}
           >
             {option.text}
           </motion.button>

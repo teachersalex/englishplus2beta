@@ -2,15 +2,12 @@
  * AchievementCelebrationModal.jsx
  * Modal cinematográfico de conquista
  * 
- * FILOSOFIA: Mesmo peso do DiamondModal
- * - Tela cheia com backdrop
- * - Animação em fases
- * - Som de celebração
- * - Quote inspiracional
+ * ATUALIZADO: Usa imagens PNG das badges ao invés de emojis
  */
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAchievementIcon } from '../../data/achievementsData';
 
 // Cores por categoria
 const CATEGORY_COLORS = {
@@ -65,6 +62,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
   if (!isOpen || !achievement) return null;
 
   const colors = CATEGORY_COLORS[achievement.category] || CATEGORY_COLORS.milestone;
+  const iconSrc = getAchievementIcon(achievement.id);
 
   return (
     <AnimatePresence>
@@ -73,7 +71,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[100] flex items-center justify-center"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.9)' }}
       >
         <div className="text-center px-6 max-w-md">
           
@@ -82,7 +80,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
             initial={{ opacity: 0, y: -20 }}
             animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.4 }}
-            className="mb-6"
+            className="mb-8"
           >
             <p 
               className="text-sm font-bold tracking-[0.3em] uppercase"
@@ -92,7 +90,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
             </p>
           </motion.div>
 
-          {/* Ícone */}
+          {/* Badge com imagem PNG */}
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={phase >= 3 ? { scale: 1, rotate: 0 } : {}}
@@ -101,60 +99,81 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
               damping: 12, 
               stiffness: 200,
             }}
-            className="relative mx-auto mb-6"
-            style={{ width: 120, height: 120 }}
+            className="relative mx-auto mb-8"
+            style={{ width: 140, height: 140 }}
           >
-            {/* Glow */}
+            {/* Glow pulsante */}
             <motion.div
               animate={phase >= 3 ? { 
-                opacity: [0.5, 0.8, 0.5],
-                scale: [1, 1.2, 1],
+                opacity: [0.4, 0.7, 0.4],
+                scale: [1, 1.15, 1],
               } : {}}
               transition={{ duration: 2, repeat: Infinity }}
               className="absolute inset-0 rounded-full"
               style={{ 
-                background: `radial-gradient(circle, ${colors.bg}40, transparent 70%)`,
+                background: `radial-gradient(circle, ${colors.bg}50, transparent 70%)`,
               }}
             />
             
-            {/* Badge */}
+            {/* Círculo de fundo */}
             <div 
               className="relative w-full h-full rounded-full flex items-center justify-center"
               style={{ 
-                background: `linear-gradient(135deg, ${colors.bg}, ${colors.bg}CC)`,
-                boxShadow: `0 0 40px ${colors.bg}60`,
+                background: `linear-gradient(135deg, ${colors.bg}30, ${colors.bg}10)`,
+                border: `3px solid ${colors.bg}`,
+                boxShadow: `0 0 60px ${colors.bg}40, inset 0 0 30px ${colors.bg}20`,
               }}
             >
-              <span className="text-6xl">{achievement.icon}</span>
+              {/* Imagem da badge */}
+              <img
+                src={iconSrc}
+                alt={achievement.title}
+                className="w-[70%] h-[70%] object-contain drop-shadow-lg"
+                style={{
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+                }}
+              />
             </div>
 
             {/* Sparkles */}
             {phase >= 3 && (
               <>
-                {[...Array(8)].map((_, i) => (
+                {[...Array(12)].map((_, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ 
                       opacity: [0, 1, 0],
                       scale: [0, 1, 0],
-                      x: Math.cos(i * 45 * Math.PI / 180) * 80,
-                      y: Math.sin(i * 45 * Math.PI / 180) * 80,
+                      x: Math.cos(i * 30 * Math.PI / 180) * 90,
+                      y: Math.sin(i * 30 * Math.PI / 180) * 90,
                     }}
                     transition={{ 
-                      duration: 0.8, 
+                      duration: 1, 
                       delay: i * 0.05,
+                      repeat: Infinity,
+                      repeatDelay: 1.5,
                     }}
                     className="absolute top-1/2 left-1/2 w-2 h-2 -ml-1 -mt-1"
                     style={{ 
                       backgroundColor: colors.bg,
                       borderRadius: '50%',
-                      boxShadow: `0 0 6px ${colors.bg}`,
+                      boxShadow: `0 0 8px ${colors.bg}`,
                     }}
                   />
                 ))}
               </>
             )}
+
+            {/* Anel externo girando */}
+            <motion.div
+              animate={phase >= 3 ? { rotate: 360 } : {}}
+              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-[-8px] rounded-full pointer-events-none"
+              style={{
+                border: `2px dashed ${colors.bg}40`,
+              }}
+            />
           </motion.div>
 
           {/* Título */}
@@ -162,10 +181,21 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
             initial={{ opacity: 0, y: 20 }}
             animate={phase >= 4 ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.4 }}
-            className="text-3xl font-black text-white mb-2"
+            className="text-3xl font-black text-white mb-3"
           >
             {achievement.title}
           </motion.h2>
+
+          {/* Descrição */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={phase >= 4 ? { opacity: 1 } : {}}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="text-sm mb-4"
+            style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+          >
+            {achievement.desc}
+          </motion.p>
 
           {/* Quote */}
           <motion.p
@@ -185,7 +215,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
             className="mb-8"
           >
             <span 
-              className="text-xs font-bold px-3 py-1 rounded-full"
+              className="text-xs font-bold px-4 py-1.5 rounded-full"
               style={{ 
                 backgroundColor: colors.light,
                 color: colors.bg,
@@ -202,10 +232,10 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onComplete}
-            className="px-10 py-4 rounded-2xl font-bold text-lg text-white"
+            className="px-12 py-4 rounded-2xl font-bold text-lg text-white"
             style={{ 
               backgroundColor: colors.bg,
-              boxShadow: `0 8px 24px ${colors.bg}50`,
+              boxShadow: `0 8px 32px ${colors.bg}50`,
             }}
           >
             Continuar

@@ -1,6 +1,6 @@
 /**
  * MapScreen - EnglishPlus 2.0
- * Recebe mapId e carrega o mapa correspondente
+ * Visual rico com elementos decorativos SVG
  */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,6 @@ import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
 import { getMapData } from '../../data/maps/mapsConfig';
 
 const getNodePosition = (index, total) => {
-  // Serpentina mais suave para menos nodes
   const positions5 = [0, -50, -70, -30, 30];
   const positions10 = [0, -60, -80, -40, 20, 70, 80, 40, -20, 0];
   
@@ -17,6 +16,64 @@ const getNodePosition = (index, total) => {
   }
   return positions10[index] || 0;
 };
+
+// Elementos decorativos SVG
+function DecoElements() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {/* Nuvens */}
+      <svg className="absolute top-16 -left-6 w-36 h-24 opacity-[0.15]" viewBox="0 0 100 50">
+        <ellipse cx="30" cy="35" rx="25" ry="12" fill="#94A3B8"/>
+        <ellipse cx="55" cy="28" rx="22" ry="16" fill="#94A3B8"/>
+        <ellipse cx="78" cy="35" rx="18" ry="11" fill="#94A3B8"/>
+      </svg>
+      
+      <svg className="absolute top-32 -right-4 w-32 h-20 opacity-[0.12]" viewBox="0 0 100 50">
+        <ellipse cx="22" cy="32" rx="20" ry="12" fill="#94A3B8"/>
+        <ellipse cx="48" cy="26" rx="24" ry="15" fill="#94A3B8"/>
+        <ellipse cx="72" cy="33" rx="16" ry="10" fill="#94A3B8"/>
+      </svg>
+
+      <svg className="absolute top-2/3 -left-8 w-28 h-18 opacity-[0.10]" viewBox="0 0 100 50">
+        <ellipse cx="30" cy="30" rx="18" ry="10" fill="#94A3B8"/>
+        <ellipse cx="52" cy="25" rx="20" ry="12" fill="#94A3B8"/>
+      </svg>
+
+      {/* Galhos/plantas esquerda */}
+      <svg className="absolute top-1/4 -left-2 w-24 h-48 opacity-[0.18]" viewBox="0 0 50 100">
+        <path d="M25 100 Q8 75 18 50 Q28 25 25 0" stroke="#059669" strokeWidth="2.5" fill="none"/>
+        <ellipse cx="14" cy="65" rx="10" ry="5" fill="#10B981" transform="rotate(-35 14 65)"/>
+        <ellipse cx="30" cy="45" rx="9" ry="4.5" fill="#059669" transform="rotate(30 30 45)"/>
+        <ellipse cx="12" cy="30" rx="8" ry="4" fill="#10B981" transform="rotate(-25 12 30)"/>
+        <ellipse cx="28" cy="18" rx="6" ry="3" fill="#059669" transform="rotate(20 28 18)"/>
+      </svg>
+
+      {/* Galhos/plantas direita */}
+      <svg className="absolute top-1/3 -right-2 w-24 h-48 opacity-[0.18]" viewBox="0 0 50 100">
+        <path d="M25 100 Q42 75 32 50 Q22 25 25 0" stroke="#059669" strokeWidth="2.5" fill="none"/>
+        <ellipse cx="36" cy="65" rx="10" ry="5" fill="#10B981" transform="rotate(35 36 65)"/>
+        <ellipse cx="20" cy="45" rx="9" ry="4.5" fill="#059669" transform="rotate(-30 20 45)"/>
+        <ellipse cx="38" cy="30" rx="8" ry="4" fill="#10B981" transform="rotate(25 38 30)"/>
+        <ellipse cx="22" cy="18" rx="6" ry="3" fill="#059669" transform="rotate(-20 22 18)"/>
+      </svg>
+
+      {/* Galhos menores embaixo */}
+      <svg className="absolute bottom-1/4 -left-4 w-20 h-36 opacity-[0.14]" viewBox="0 0 40 80">
+        <path d="M20 80 Q5 55 15 35 Q25 15 20 0" stroke="#0D9488" strokeWidth="2" fill="none"/>
+        <ellipse cx="10" cy="50" rx="8" ry="4" fill="#14B8A6" transform="rotate(-30 10 50)"/>
+        <ellipse cx="25" cy="30" rx="7" ry="3.5" fill="#0D9488" transform="rotate(25 25 30)"/>
+      </svg>
+
+      {/* Montanhas distantes */}
+      <svg className="absolute bottom-0 left-0 right-0 h-48 opacity-[0.08]" viewBox="0 0 400 120" preserveAspectRatio="none">
+        {/* Camada de trás - mais clara */}
+        <path d="M0 120 L40 70 L80 90 L130 50 L180 75 L230 35 L280 60 L330 45 L380 70 L400 55 L400 120 Z" fill="#64748B" opacity="0.5"/>
+        {/* Camada da frente - mais escura */}
+        <path d="M0 120 L60 85 L100 100 L150 65 L200 85 L250 55 L300 80 L350 60 L400 90 L400 120 Z" fill="#475569"/>
+      </svg>
+    </div>
+  );
+}
 
 const Icons = {
   lock: (
@@ -44,6 +101,11 @@ const Icons = {
       <path d="M15 19l-7-7 7-7"/>
     </svg>
   ),
+  flag: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+    </svg>
+  ),
 };
 
 function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef, totalNodes }) {
@@ -61,7 +123,7 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef,
       ref={isActive ? nodeRef : null}
       initial={{ opacity: 0, scale: 0.8, x: positionX }}
       animate={{ opacity: 1, scale: 1, x: positionX }}
-      className="flex flex-col items-center"
+      className="flex flex-col items-center relative z-10"
     >
       <button
         onClick={() => !isLocked && onClick(node.id)}
@@ -83,9 +145,9 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef,
           {isCurrent && (
             <>
               <motion.div 
-                animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                animate={{ scale: [1, 1.3, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="absolute rounded-full"
+                className="absolute rounded-full opacity-30"
                 style={{ width: nodeSize + 20, height: nodeSize + 20, backgroundColor: COLORS.primary }}
               />
               <div 
@@ -143,20 +205,20 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef,
               width: nodeSize, 
               height: nodeSize,
               background: isLocked 
-                ? COLORS.border
+                ? `linear-gradient(135deg, ${COLORS.border} 0%, #CBD5E1 100%)`
                 : isCompleted 
                   ? `linear-gradient(135deg, ${COLORS.success} 0%, #059669 100%)`
                   : node.isBoss
                     ? `linear-gradient(135deg, #f59e0b 0%, #d97706 100%)`
-                    : GRADIENTS.blue,
+                    : `linear-gradient(135deg, ${COLORS.primary} 0%, #2563EB 100%)`,
               color: isLocked ? COLORS.textMuted : COLORS.textLight,
               boxShadow: isLocked 
-                ? 'none' 
+                ? 'inset 0 2px 4px rgba(0,0,0,0.1)' 
                 : isCompleted
                   ? `0 8px 24px -4px ${COLORS.success}50`
                   : node.isBoss
                     ? '0 8px 24px -4px rgba(245, 158, 11, 0.5)'
-                    : SHADOWS.button,
+                    : `0 8px 24px -4px ${COLORS.primary}50`,
             }}
           >
             {isLocked ? Icons.lock : isCompleted ? Icons.check : node.isBoss ? Icons.castle : (
@@ -176,18 +238,20 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef,
           )}
           
           {isCurrent && !isCompleted && (
-            <div 
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
               className="absolute z-20 font-bold rounded-full px-2 py-0.5 text-xs"
               style={{ 
                 bottom: 4, right: 0,
                 backgroundColor: COLORS.surface,
                 color: COLORS.primary,
                 border: `2px solid ${COLORS.primary}`,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               }}
             >
               {progress}/3
-            </div>
+            </motion.div>
           )}
 
           {isCompleted && (
@@ -204,7 +268,7 @@ function MapNode({ node, state, progress, onClick, positionX, isActive, nodeRef,
         
         <div className="mt-1 text-center">
           <div 
-            className="text-sm font-medium"
+            className="text-sm font-semibold"
             style={{ 
               color: isLocked ? COLORS.textMuted : COLORS.text,
               opacity: isLocked ? 0.6 : 1,
@@ -235,7 +299,7 @@ function NodePath({ fromX, toX, isCompleted, isNext }) {
   const endX = centerX + toX;
   
   return (
-    <div className="flex justify-center" style={{ height }}>
+    <div className="flex justify-center relative z-10" style={{ height }}>
       <svg width={width} height={height} className="overflow-visible">
         <defs>
           <linearGradient id="pathGradientCompleted" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -244,19 +308,47 @@ function NodePath({ fromX, toX, isCompleted, isNext }) {
           </linearGradient>
           <linearGradient id="pathGradientActive" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={COLORS.primary} />
-            <stop offset="100%" stopColor={COLORS.primaryDark} />
+            <stop offset="50%" stopColor="#8B5CF6" />
+            <stop offset="100%" stopColor={COLORS.primary} />
           </linearGradient>
+          <filter id="pathGlow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
+        
+        {/* Sombra do caminho */}
+        <path
+          d={`M ${startX} 0 C ${startX} ${height * 0.5}, ${endX} ${height * 0.5}, ${endX} ${height}`}
+          fill="none"
+          stroke="rgba(0,0,0,0.05)"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        
+        {/* Caminho principal */}
         <path
           d={`M ${startX} 0 C ${startX} ${height * 0.5}, ${endX} ${height * 0.5}, ${endX} ${height}`}
           fill="none"
           stroke={isCompleted ? 'url(#pathGradientCompleted)' : isNext ? 'url(#pathGradientActive)' : COLORS.border}
-          strokeWidth="4"
+          strokeWidth={isCompleted || isNext ? 5 : 4}
           strokeDasharray={isCompleted || isNext ? "none" : "8 8"}
           strokeLinecap="round"
           opacity={isCompleted || isNext ? 1 : 0.4}
-          style={{ filter: isCompleted ? `drop-shadow(0 0 4px ${COLORS.success}50)` : 'none' }}
+          filter={isCompleted || isNext ? 'url(#pathGlow)' : 'none'}
         />
+        
+        {/* Pontos decorativos no caminho ativo */}
+        {isNext && (
+          <>
+            <circle cx={startX} cy={height * 0.25} r="3" fill={COLORS.primary} opacity="0.5"/>
+            <circle cx={(startX + endX) / 2} cy={height * 0.5} r="3" fill="#8B5CF6" opacity="0.5"/>
+            <circle cx={endX} cy={height * 0.75} r="3" fill={COLORS.primary} opacity="0.5"/>
+          </>
+        )}
       </svg>
     </div>
   );
@@ -268,7 +360,6 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
 
-  // Carregar dados do mapa selecionado
   const mapData = getMapData(mapId);
   const NODES_CONFIG = mapData?.nodes || [];
   const mapTitle = mapData?.title || 'Mapa';
@@ -281,7 +372,10 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
     return state === 'in_progress' || state === 'unlocked';
   })?.id;
 
-  // Reset scroll quando trocar de mapa
+  // Calcula progresso geral (protegido contra divisão por zero)
+  const completedCount = NODES_CONFIG.filter(node => getNodeState(node.id) === 'completed').length;
+  const progressPercent = NODES_CONFIG.length > 0 ? (completedCount / NODES_CONFIG.length) * 100 : 0;
+
   useEffect(() => {
     setHasScrolled(false);
   }, [mapId]);
@@ -319,19 +413,24 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
 
   return (
     <div 
-      className="min-h-screen"
+      className="min-h-screen relative"
       style={{ 
         backgroundColor: COLORS.bgApp,
         backgroundImage: `
-          radial-gradient(${COLORS.border} 1px, transparent 1px),
-          radial-gradient(ellipse 80% 50% at 50% 0%, rgba(59, 130, 246, 0.06), transparent)
+          radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.06), transparent 60%),
+          radial-gradient(ellipse 100% 60% at 20% 100%, rgba(16, 185, 129, 0.04), transparent 50%),
+          radial-gradient(ellipse 80% 50% at 80% 80%, rgba(139, 92, 246, 0.03), transparent 50%),
+          radial-gradient(${COLORS.border}40 1px, transparent 1px)
         `,
-        backgroundSize: '24px 24px, 100% 100%',
+        backgroundSize: '100% 100%, 100% 100%, 100% 100%, 20px 20px',
       }}
     >
+      {/* Elementos decorativos */}
+      <DecoElements />
+
       <header 
         className="sticky top-0 z-30 backdrop-blur-md border-b"
-        style={{ backgroundColor: 'rgba(248, 250, 252, 0.9)', borderColor: COLORS.border }}
+        style={{ backgroundColor: 'rgba(248, 250, 252, 0.85)', borderColor: COLORS.border }}
       >
         <div className="flex items-center justify-between p-4 max-w-lg mx-auto">
           <button
@@ -344,10 +443,16 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
           </button>
 
           <div className="text-center">
-            <h1 className="font-semibold text-sm uppercase tracking-wide" style={{ color: COLORS.text }}>
+            <h1 className="font-bold text-sm uppercase tracking-wide" style={{ color: COLORS.text }}>
               {mapTitle}
             </h1>
-            <p className="text-xs" style={{ color: COLORS.textMuted }}>{mapSubtitle}</p>
+            <div className="flex items-center justify-center gap-1.5 mt-0.5">
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: COLORS.primary }}
+              />
+              <p className="text-xs" style={{ color: COLORS.textMuted }}>{mapSubtitle}</p>
+            </div>
           </div>
 
           <button
@@ -358,12 +463,25 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
             Reset
           </button>
         </div>
+        
+        {/* Barra de progresso sutil */}
+        <div className="h-0.5" style={{ backgroundColor: COLORS.border }}>
+          <motion.div 
+            className="h-full"
+            style={{ 
+              background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.success})`,
+            }}
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
       </header>
 
       <div 
         ref={scrollRef}
-        className="overflow-y-auto pb-40 pt-12"
-        style={{ height: 'calc(100vh - 72px)' }}
+        className="overflow-y-auto pb-40 pt-12 relative z-10"
+        style={{ height: 'calc(100vh - 80px)' }}
       >
         <div className="flex flex-col items-center px-4">
           {nodesReversed.map((node, index) => {
@@ -372,9 +490,9 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
             const positionX = getNodePosition(NODES_CONFIG.length - 1 - index, NODES_CONFIG.length);
             const prevPositionX = index > 0 ? getNodePosition(NODES_CONFIG.length - index, NODES_CONFIG.length) : 0;
             
-            const nextNode = nodesReversed[index + 1];
-            const nextState = nextNode ? getNodeState(nextNode.id) : null;
-            const isNextCurrent = nextState === 'in_progress' || nextState === 'unlocked';
+            // Path colorido: se o node atual (de cima) está completo OU é o atual
+            const isNodeCompleted = state === 'completed';
+            const isNodeCurrent = state === 'in_progress' || state === 'unlocked';
             const isActive = node.id === activeNodeId;
             
             return (
@@ -383,8 +501,8 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
                   <NodePath 
                     fromX={prevPositionX}
                     toX={positionX}
-                    isCompleted={state === 'completed'}
-                    isNext={isNextCurrent}
+                    isCompleted={isNodeCompleted}
+                    isNext={isNodeCurrent}
                   />
                 )}
                 
@@ -402,24 +520,26 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
             );
           })}
           
+          {/* Início da jornada */}
           <div className="flex flex-col items-center mt-12 mb-8">
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl"
               style={{ 
-                backgroundColor: COLORS.surface, 
-                border: `1px solid ${COLORS.border}`,
-                boxShadow: SHADOWS.card,
+                background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05))',
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                boxShadow: '0 4px 12px rgba(251, 191, 36, 0.1)',
               }}
             >
-              <span style={{ color: '#f59e0b' }}>{Icons.star}</span>
-              <span className="text-sm font-medium" style={{ color: COLORS.text }}>Início da Jornada</span>
+              <span style={{ color: '#f59e0b' }}>{Icons.flag}</span>
+              <span className="text-sm font-semibold" style={{ color: '#D97706' }}>Início da Jornada</span>
             </motion.div>
           </div>
         </div>
       </div>
 
+      {/* Modal Reset */}
       <AnimatePresence>
         {showResetConfirm && (
           <motion.div

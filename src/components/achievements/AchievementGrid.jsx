@@ -4,58 +4,13 @@
  * 
  * Mobile: 5 colunas × 2 rows = 10 visíveis
  * Desktop: 10 colunas × 2 rows = 20 visíveis
+ * 
+ * ATUALIZADO: Importa ACHIEVEMENT_ICONS do achievementsData.js
  */
 
 import { motion } from 'framer-motion';
 import { COLORS } from '../../tokens';
-
-const ACHIEVEMENT_ICONS = {
-  // Lições
-  lesson1: 'shield',
-  lesson6: 'book',
-  lesson18: 'scroll',
-  lesson30: 'encyclopedia',
-  
-  // Nodes do mapa
-  node1: 'castle',
-  node3: 'map',
-  node5: 'globe',
-  node7: 'mountain',
-  node10: 'star',
-  allnodes: 'monument',
-  
-  // Perfeitos
-  perfect5: 'target',
-  perfect10: 'medal',
-  perfect20: 'masks',
-  
-  // Diamantes
-  diamond10: 'diamond',
-  diamond20: 'crown',
-  
-  // Histórias
-  story1: 'headphones',
-  story3: 'radio',
-  story5: 'music',
-  story10: 'conductor',
-  story20: 'clapperboard',
-  
-  // XP
-  xp500: 'sparkle',
-  xp1000: 'comet',
-  xp2500: 'bolt',
-  xp5000: 'fire',
-  xp10000: 'supernova',
-  
-  // Níveis
-  level5: 'rocket',
-  level10: 'ufo',
-  level15: 'moon',
-  level20: 'sun',
-  
-  // Especial
-  master: 'trophy',
-};
+import { ACHIEVEMENT_ICONS } from '../../data/achievementsData';
 
 const DISPLAY_ORDER = [
   // Linha 1 - Primeiras conquistas

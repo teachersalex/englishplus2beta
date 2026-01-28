@@ -31,13 +31,14 @@ import EpisodePlayer from './components/stories/EpisodePlayer';
 
 // Data - loader centralizado
 import { nodesData, NODE_COUNT } from './data/nodes';
+import { getMapData } from './data/maps/mapsConfig';
 
 function AppContent() {
   const { user, logout } = useAuth();
   const [currentSection, setCurrentSection] = useState('home');
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isInLesson, setIsInLesson] = useState(false);
-  const [currentMapId, setCurrentMapId] = useState(0); // NOVO: qual mapa está selecionado
+  const [currentMapId, setCurrentMapId] = useState(0); // qual mapa está selecionado
   
   // Stories state
   const [currentStorySection, setCurrentStorySection] = useState('hub');
@@ -88,9 +89,12 @@ function AppContent() {
     return { title: 'Tudo completo!', module: 'Parabéns!', theme: '' };
   };
 
-  // Inicia lição de um node específico
+  // Inicia lição de um node específico (usa mapa atual)
   const startNodeLesson = (nodeId) => {
-    const node = nodesData[nodeId];
+    const mapData = getMapData(currentMapId);
+    if (!mapData) return;
+    
+    const node = mapData.nodesData?.[nodeId];
     if (!node) return;
 
     const nextLevel = getNextLevel(nodeId, node.levels);
@@ -98,6 +102,7 @@ function AppContent() {
 
     setCurrentLesson({
       nodeId: nodeId,
+      mapId: currentMapId,
       node: node,
       level: nextLevel,
       currentRound: getNodeProgress(nodeId) + 1,

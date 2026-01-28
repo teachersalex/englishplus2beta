@@ -7,22 +7,6 @@
  * - Ritmo Zig-Zag: Mapa (ímpares) vs Grind (pares)
  * - Badge só acende APÓS celebrar
  * - "Desbloqueada" ≠ "Celebrada"
- * 
- * DISTRIBUIÇÃO (10 nodes × 3 rodadas = 30 sessões):
- * 
- * Node 1:  1/3 → lesson1    | 3/3 → node1 + 💎
- * Node 2:  3/3 → lesson6 + 💎 (grind)
- * Node 3:  3/3 → node3 + 💎 (mapa)
- * Node 4:  3/3 → perfect5 + 💎 (habilidade)
- * Node 5:  3/3 → node5 + 💎 (mapa)
- * Node 6:  3/3 → lesson18 + 💎 (grind)
- * Node 7:  3/3 → node7 + 💎 (mapa)
- * Node 8:  3/3 → perfect10 + 💎 (perfeição)
- * Node 9:  3/3 → diamond10 + 💎 (recurso)
- * Node 10: 3/3 → node10 + allnodes + 💎 (GLÓRIA)
- * 
- * HISTÓRIAS (paralelo, nunca colidem):
- * story1, story3, story5, story10, story20
  */
 
 // === HELPERS ===
@@ -40,7 +24,7 @@ const countCompletedNodes = (p) => {
 const countCompletedStories = (p) => {
   return Object.values(p.storyProgress || {}).filter(s => {
     const episodeCount = Object.keys(s.scores || {}).length;
-    return episodeCount >= 3; // Considera série completa com 3+ episódios feitos
+    return episodeCount >= 3;
   }).length;
 };
 
@@ -51,26 +35,73 @@ const countPerfectLessons = (p) => {
 const countDiamonds = (p) => p.diamonds || 0;
 const getXP = (p) => p.xp || 0;
 const getLevel = (p) => p.level || 1;
-const getStreak = (p) => p.streak || 0;
 
-// === PRIORIDADES (maior = mais importante = aparece primeiro) ===
-// Usado quando múltiplas desbloqueiam no mesmo momento
+// === MAPEAMENTO DE ÍCONES (PNG) ===
+// Arquivos em /public/achievements/*.png
+export const ACHIEVEMENT_ICONS = {
+  // Lições
+  lesson1: 'shield',
+  lesson6: 'book',
+  lesson18: 'scroll',
+  lesson30: 'encyclopedia',
+  
+  // Nodes do mapa
+  node1: 'castle',
+  node3: 'map',
+  node5: 'globe',
+  node7: 'mountain',
+  node10: 'star',
+  allnodes: 'monument',
+  
+  // Perfeitos
+  perfect5: 'target',
+  perfect10: 'medal',
+  perfect20: 'masks',
+  
+  // Diamantes
+  diamond10: 'diamond',
+  diamond20: 'crown',
+  
+  // Histórias
+  story1: 'headphones',
+  story3: 'radio',
+  story5: 'music',
+  story10: 'conductor',
+  story20: 'clapperboard',
+  
+  // XP
+  xp500: 'sparkle',
+  xp1000: 'comet',
+  xp2500: 'bolt',
+  xp5000: 'fire',
+  xp10000: 'supernova',
+  
+  // Níveis
+  level5: 'rocket',
+  level10: 'ufo',
+  level15: 'moon',
+  level20: 'sun',
+  
+  // Especial
+  master: 'trophy',
+};
+
+// Helper para pegar o arquivo PNG
+export const getAchievementIcon = (id) => {
+  const iconName = ACHIEVEMENT_ICONS[id] || 'shield';
+  return `/achievements/${iconName}.png`;
+};
+
+// === PRIORIDADES ===
 const PRIORITIES = {
-  // LENDÁRIAS (aparecem primeiro sempre)
   allnodes: 100,
   master: 100,
   node10: 95,
-  
-  // MARCOS DE MAPA (alta prioridade)
   node1: 90,
   node3: 85,
   node5: 85,
   node7: 85,
-  
-  // PRIMEIRO PASSO (única que aparece no 1/3)
   lesson1: 90,
-  
-  // GRIND MILESTONES (média-alta)
   lesson6: 70,
   lesson18: 70,
   lesson30: 75,
@@ -79,15 +110,11 @@ const PRIORITIES = {
   perfect20: 80,
   diamond10: 75,
   diamond20: 80,
-  
-  // HISTÓRIAS (nunca competem com mapa)
   story1: 85,
   story3: 80,
   story5: 80,
   story10: 85,
   story20: 90,
-  
-  // XP/LEVEL (menor prioridade - mas ainda têm modal!)
   xp500: 50,
   xp1000: 55,
   xp2500: 60,
@@ -97,21 +124,16 @@ const PRIORITIES = {
   level10: 55,
   level15: 60,
   level20: 65,
-  
-  // DEFAULT
   default: 40,
 };
 
 export const getPriority = (id) => PRIORITIES[id] ?? PRIORITIES.default;
 
 // === TODAS AS CONQUISTAS ===
-// Organizadas por QUANDO devem desbloquear (não por tier visual)
-
 export const ALL_ACHIEVEMENTS = [
   // ========== PRIMEIRO PASSO (Node 1, 1/3) ==========
   {
     id: 'lesson1',
-    icon: '🛡️',
     title: 'Primeiro Passo',
     desc: 'Complete sua primeira lição',
     quote: 'O primeiro passo foi dado. A jornada começou.',
@@ -123,7 +145,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 1 COMPLETO (3/3) ==========
   {
     id: 'node1',
-    icon: '🏰',
     title: 'Conquistador',
     desc: 'Complete o primeiro node',
     quote: 'Você conquistou seu primeiro território.',
@@ -135,7 +156,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 2 COMPLETO (grind) ==========
   {
     id: 'lesson6',
-    icon: '📚',
     title: 'Estudante',
     desc: 'Complete 6 lições',
     quote: 'Seis lições. O hábito está se formando.',
@@ -147,7 +167,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 3 COMPLETO (mapa) ==========
   {
     id: 'node3',
-    icon: '🗺️',
     title: 'Explorador',
     desc: 'Complete 3 nodes',
     quote: 'O mapa começa a revelar seus segredos.',
@@ -159,7 +178,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 4 COMPLETO (habilidade) ==========
   {
     id: 'perfect5',
-    icon: '🎯',
     title: 'Atirador',
     desc: '5 lições com 95%+',
     quote: 'Precisão é poder. Cinco tiros certeiros.',
@@ -171,7 +189,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 5 COMPLETO (mapa - midgame) ==========
   {
     id: 'node5',
-    icon: '🌍',
     title: 'Aventureiro',
     desc: 'Complete 5 nodes',
     quote: 'Metade do mapa conquistado. Você é persistente.',
@@ -183,7 +200,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 6 COMPLETO (grind) ==========
   {
     id: 'lesson18',
-    icon: '📖',
     title: 'Leitor',
     desc: 'Complete 18 lições',
     quote: 'Dezoito capítulos da sua história.',
@@ -195,7 +211,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 7 COMPLETO (mapa) ==========
   {
     id: 'node7',
-    icon: '🏔️',
     title: 'Alpinista',
     desc: 'Complete 7 nodes',
     quote: 'O pico está próximo. Continue subindo.',
@@ -207,7 +222,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 8 COMPLETO (perfeição) ==========
   {
     id: 'perfect10',
-    icon: '💯',
     title: 'Perfeccionista',
     desc: '10 lições perfeitas',
     quote: 'Dez vezes impecável. Excelência como hábito.',
@@ -219,7 +233,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 9 COMPLETO (recurso) ==========
   {
     id: 'diamond10',
-    icon: '💎',
     title: 'Colecionador',
     desc: 'Acumule 10 diamantes',
     quote: 'Dez diamantes brilham no seu cofre.',
@@ -231,7 +244,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== NODE 10 COMPLETO (GLÓRIA) ==========
   {
     id: 'node10',
-    icon: '🌟',
     title: 'Mestre do Mapa',
     desc: 'Complete todos os 10 nodes',
     quote: 'O mapa inteiro é seu. Lendário.',
@@ -241,7 +253,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'allnodes',
-    icon: '🗿',
     title: 'Deus do Mapa',
     desc: 'Domine todo o território',
     quote: 'Você transcendeu. O mapa se curva.',
@@ -253,7 +264,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== HISTÓRIAS (paralelo) ==========
   {
     id: 'story1',
-    icon: '🎧',
     title: 'Ouvinte',
     desc: 'Complete sua primeira história',
     quote: 'A primeira história terminou. Muitas virão.',
@@ -263,7 +273,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'story3',
-    icon: '📻',
     title: 'Audiófilo',
     desc: 'Complete 3 histórias',
     quote: 'Três narrativas absorvidas. Seu ouvido evolui.',
@@ -273,7 +282,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'story5',
-    icon: '🎵',
     title: 'Melômano',
     desc: 'Complete 5 histórias',
     quote: 'Cinco histórias. O inglês soa natural.',
@@ -283,7 +291,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'story10',
-    icon: '🎼',
     title: 'Maestro',
     desc: 'Complete 10 histórias',
     quote: 'Dez sinfonias de palavras. Virtuoso.',
@@ -293,7 +300,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'story20',
-    icon: '🎬',
     title: 'Diretor',
     desc: 'Complete 20 histórias',
     quote: 'Vinte narrativas. Você dirige seu aprendizado.',
@@ -302,10 +308,9 @@ export const ALL_ACHIEVEMENTS = [
     category: 'stories',
   },
 
-  // ========== XP MILESTONES (espaçados para não colidir) ==========
+  // ========== XP MILESTONES ==========
   {
     id: 'xp500',
-    icon: '✨',
     title: 'Centelha',
     desc: 'Acumule 500 XP',
     quote: 'Quinhentos pontos de experiência. A centelha virou chama.',
@@ -315,7 +320,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'xp1000',
-    icon: '💫',
     title: 'Brilhante',
     desc: 'Acumule 1000 XP',
     quote: 'Mil XP. Você brilha.',
@@ -325,7 +329,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'xp2500',
-    icon: '⚡',
     title: 'Eletrizante',
     desc: 'Acumule 2500 XP',
     quote: 'Energia acumulada. Imparável.',
@@ -335,7 +338,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'xp5000',
-    icon: '🔥',
     title: 'Em Chamas',
     desc: 'Acumule 5000 XP',
     quote: 'Cinco mil. O fogo não apaga.',
@@ -345,7 +347,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'xp10000',
-    icon: '🌟',
     title: 'Estelar',
     desc: 'Acumule 10000 XP',
     quote: 'Dez mil XP. Uma estrela nasceu.',
@@ -357,7 +358,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== LEVEL MILESTONES ==========
   {
     id: 'level5',
-    icon: '🚀',
     title: 'Decolando',
     desc: 'Alcance o nível 5',
     quote: 'Nível 5. A decolagem foi suave.',
@@ -367,7 +367,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'level10',
-    icon: '🛸',
     title: 'Órbita',
     desc: 'Alcance o nível 10',
     quote: 'Nível 10. Você está em órbita.',
@@ -377,7 +376,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'level15',
-    icon: '🌙',
     title: 'Lunar',
     desc: 'Alcance o nível 15',
     quote: 'Nível 15. A lua foi alcançada.',
@@ -387,7 +385,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'level20',
-    icon: '☀️',
     title: 'Solar',
     desc: 'Alcance o nível 20',
     quote: 'Nível 20. Você é o sol.',
@@ -399,7 +396,6 @@ export const ALL_ACHIEVEMENTS = [
   // ========== MAIS GRIND (para endgame) ==========
   {
     id: 'lesson30',
-    icon: '📕',
     title: 'Veterano',
     desc: 'Complete 30 lições',
     quote: 'Trinta lições. Veterano de guerra.',
@@ -409,7 +405,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'perfect20',
-    icon: '🎭',
     title: 'Virtuoso',
     desc: '20 lições perfeitas',
     quote: 'Vinte perfeitas. Virtuosismo puro.',
@@ -419,7 +414,6 @@ export const ALL_ACHIEVEMENTS = [
   },
   {
     id: 'diamond20',
-    icon: '💠',
     title: 'Joalheiro',
     desc: 'Acumule 20 diamantes',
     quote: 'Vinte gemas. Riqueza merecida.',
@@ -431,11 +425,10 @@ export const ALL_ACHIEVEMENTS = [
   // ========== CONQUISTA FINAL ==========
   {
     id: 'master',
-    icon: '🎓',
     title: 'Mestre do Inglês',
     desc: 'Complete todas as conquistas',
     quote: 'Não há mais nada a conquistar. Você é o mestre.',
-    target: 30, // Número de conquistas - 1 (essa)
+    target: 30,
     getValue: (p) => (p.earnedAchievements || []).length,
     category: 'legendary',
   },
@@ -443,43 +436,26 @@ export const ALL_ACHIEVEMENTS = [
 
 // === UTILIDADES ===
 
-/**
- * Retorna conquista por ID
- */
 export const getAchievementById = (id) => {
   return ALL_ACHIEVEMENTS.find(a => a.id === id) || null;
 };
 
-/**
- * Checa quais conquistas foram desbloqueadas mas ainda não celebradas
- * @param {Object} progress - Progresso atual
- * @param {Array} earnedAchievements - Conquistas já celebradas
- * @param {Array} pendingAchievements - Conquistas na fila
- * @returns {Array} IDs de conquistas recém desbloqueadas
- */
 export const checkNewAchievements = (progress, earnedAchievements = [], pendingAchievements = []) => {
   const alreadyProcessed = [...earnedAchievements, ...pendingAchievements];
   const newlyUnlocked = [];
   
   ALL_ACHIEVEMENTS.forEach(achievement => {
-    // Pula se já foi processada
     if (alreadyProcessed.includes(achievement.id)) return;
     
-    // Checa se atingiu o target
     const currentValue = achievement.getValue(progress);
     if (currentValue >= achievement.target) {
       newlyUnlocked.push(achievement.id);
     }
   });
   
-  // Ordena por prioridade (maior primeiro)
   return newlyUnlocked.sort((a, b) => getPriority(b) - getPriority(a));
 };
 
-/**
- * Retorna conquistas para exibir na Home
- * Só mostra as que foram CELEBRADAS (earnedAchievements)
- */
 export const getDisplayAchievements = (earnedAchievements = []) => {
   return ALL_ACHIEVEMENTS.map(a => ({
     ...a,
@@ -487,31 +463,21 @@ export const getDisplayAchievements = (earnedAchievements = []) => {
   }));
 };
 
-/**
- * Estatísticas gerais
- * Mantém compatibilidade com HomeScreen (visible/visibleTotal)
- */
 export const getAchievementStats = (earnedAchievements = [], pendingAchievements = []) => {
   const total = ALL_ACHIEVEMENTS.length;
   const earned = earnedAchievements.length;
   const pending = pendingAchievements?.length || 0;
   
   return {
-    // Novos campos (v2)
     earned,
     pending,
     total,
     percent: Math.round((earned / total) * 100),
-    
-    // Compatibilidade com HomeScreen
     visible: earned,
     visibleTotal: total,
   };
 };
 
-/**
- * Agrupa conquistas por categoria (para UI)
- */
 export const getAchievementsByCategory = (earnedAchievements = []) => {
   const categories = {
     milestone: { name: 'Marcos', achievements: [] },
@@ -536,12 +502,6 @@ export const getAchievementsByCategory = (earnedAchievements = []) => {
   return categories;
 };
 
-// === COMPATIBILIDADE (funções usadas pelo HomeScreen) ===
-
-/**
- * Retorna conquistas visíveis (todas, já que não temos mais tiers ocultos)
- * Mantido para compatibilidade com HomeScreen
- */
 export const getVisibleAchievements = (earnedAchievements = []) => {
   return ALL_ACHIEVEMENTS.map(a => ({
     ...a,
@@ -549,9 +509,6 @@ export const getVisibleAchievements = (earnedAchievements = []) => {
   }));
 };
 
-/**
- * Alias para compatibilidade
- */
 export const ACHIEVEMENT_TIERS = [
   {
     id: 1,

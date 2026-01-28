@@ -18,8 +18,8 @@ const PLAYABLE_WORLDS = [
     nodes: 5, 
     icon: '⛵', 
     color: '#60A5FA', 
-    x: 200, 
-    y: 380 
+    x: 350, 
+    y: 420 
   },
   { 
     id: 1, 
@@ -28,18 +28,20 @@ const PLAYABLE_WORLDS = [
     nodes: 10, 
     icon: '🌅', 
     color: '#A78BFA', 
-    x: 350, 
-    y: 280 
+    x: 550, 
+    y: 300 
   },
 ];
 
 // Ilhas LOCKED (futuro, mistério)
 const LOCKED_ISLANDS = [
-  { id: 'future1', x: 120, y: 260 },
-  { id: 'future2', x: 450, y: 380 },
-  { id: 'future3', x: 80, y: 150 },
-  { id: 'future4', x: 480, y: 180 },
-  { id: 'future5', x: 280, y: 150 },
+  { id: 'future1', x: 180, y: 320 },
+  { id: 'future2', x: 720, y: 400 },
+  { id: 'future3', x: 120, y: 180 },
+  { id: 'future4', x: 780, y: 220 },
+  { id: 'future5', x: 450, y: 180 },
+  { id: 'future6', x: 250, y: 200 },
+  { id: 'future7', x: 650, y: 480 },
 ];
 
 function PlayableIsland({ world, isSelected, onClick }) {
@@ -320,9 +322,9 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
       {/* Mapa */}
       <div className="flex-1 relative overflow-hidden">
         <svg 
-          viewBox="0 0 560 500"
+          viewBox="0 0 900 600"
           className="absolute inset-0 w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="xMidYMid slice"
         >
           <defs>
             <linearGradient id="ocean" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -335,27 +337,29 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
           </defs>
           
           {/* Oceano */}
-          <rect x="-100" y="-100" width="760" height="700" fill="url(#ocean)" />
-          <rect x="-100" y="-100" width="760" height="700" fill="url(#waves)" />
+          <rect x="-100" y="-100" width="1100" height="800" fill="url(#ocean)" />
+          <rect x="-100" y="-100" width="1100" height="800" fill="url(#waves)" />
           
           {/* Nuvens */}
           <g fill="rgba(255,255,255,0.15)">
-            <ellipse cx="80" cy="60" rx="55" ry="18" />
-            <ellipse cx="450" cy="45" rx="45" ry="15" />
-            <ellipse cx="250" cy="30" rx="35" ry="12" />
-            <ellipse cx="520" cy="120" rx="40" ry="14" />
-            <ellipse cx="40" cy="200" rx="30" ry="10" />
+            <ellipse cx="120" cy="70" rx="55" ry="18" />
+            <ellipse cx="750" cy="55" rx="45" ry="15" />
+            <ellipse cx="450" cy="40" rx="35" ry="12" />
+            <ellipse cx="850" cy="140" rx="40" ry="14" />
+            <ellipse cx="60" cy="250" rx="30" ry="10" />
+            <ellipse cx="300" cy="90" rx="40" ry="13" />
+            <ellipse cx="620" cy="100" rx="35" ry="11" />
           </g>
           
           {/* Castelo decorativo - OBJETIVO FUTURO */}
-          <DecorativeCastle x={280} y={60} />
+          <DecorativeCastle x={450} y={80} />
           
           {/* Caminho dourado: Chegada → Despertar → (futuro) Castelo */}
           <g fill="none" stroke="#e6c288" strokeWidth="3" strokeDasharray="12,8" strokeLinecap="round" opacity="0.4">
             {/* Chegada → Despertar */}
-            <path d="M 200 380 Q 275 330 350 280" />
+            <path d="M 350 420 Q 450 360 550 300" />
             {/* Despertar → Castelo (mais fraco, futuro) */}
-            <path d="M 350 280 Q 315 180 280 120" opacity="0.3" strokeDasharray="8,12" />
+            <path d="M 550 300 Q 500 200 450 140" opacity="0.3" strokeDasharray="8,12" />
           </g>
           
           {/* Ilhas LOCKED */}
@@ -379,7 +383,7 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
           ))}
           
           {/* Bússola */}
-          <g transform="translate(520, 460)">
+          <g transform="translate(850, 550)">
             <circle r="20" fill="rgba(0,0,0,0.25)" />
             <circle r="16" fill="#1e3a5f" stroke="#e6c288" strokeWidth="1.5" />
             <text y="-4" textAnchor="middle" fill="#e6c288" fontSize="9" fontWeight="bold">N</text>
