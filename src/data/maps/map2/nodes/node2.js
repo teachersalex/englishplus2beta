@@ -64,7 +64,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"O gato está na cama."',
           words: ['The', 'cat', 'is', 'on', 'the', 'bed.'],
           correct: 'The cat is on the bed.',
           feedback: { success: { title: 'Ótimo!', text: 'O gato está na cama!' } }
@@ -80,7 +80,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Localização simples',
-          instruction: 'Monte a frase',
+          instruction: '"Na mesa."',
           words: ['On', 'the', 'table.'],
           correct: 'On the table.',
           feedback: { success: { title: 'Isso!', text: 'Na mesa.' } }
@@ -89,7 +89,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Embaixo',
-          instruction: 'Monte a frase',
+          instruction: '"Embaixo da cadeira."',
           words: ['Under', 'the', 'chair.'],
           correct: 'Under the chair.',
           feedback: { success: { title: 'Perfeito!', text: 'Embaixo da cadeira.' } }
@@ -108,7 +108,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase completa',
-          instruction: 'Monte a frase',
+          instruction: '"O gato está em cima da TV."',
           words: ['The', 'cat', 'is', 'on', 'the', 'TV.'],
           correct: 'The cat is on the TV.',
           feedback: { success: { title: 'Gato travesso!', text: 'Ele subiu na TV!' } }
@@ -147,7 +147,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'O cachorro',
-          instruction: 'Monte a frase',
+          instruction: '"O cachorro está embaixo da mesa."',
           words: ['The', 'dog', 'is', 'under', 'the', 'table.'],
           correct: 'The dog is under the table.',
           feedback: { success: { title: 'Coitado!', text: 'O cachorro está embaixo da mesa.' } }

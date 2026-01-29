@@ -64,7 +64,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"O sofá é grande."',
           words: ['The', 'sofa', 'is', 'big.'],
           correct: 'The sofa is big.',
           feedback: { success: { title: 'Ótimo!', text: 'Sua primeira descrição de móvel!' } }
@@ -125,7 +125,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"A lâmpada é bonita."',
           words: ['The', 'lamp', 'is', 'beautiful.'],
           correct: 'The lamp is beautiful.',
           feedback: { success: { title: 'Linda frase!', text: 'A lâmpada é bonita.' } }
@@ -141,7 +141,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Posse',
-          instruction: 'Monte a frase',
+          instruction: '"Esta é minha mesa."',
           words: ['This', 'is', 'my', 'table.'],
           correct: 'This is my table.',
           feedback: { success: { title: 'Excelente!', text: 'Esta é a minha mesa.' } }

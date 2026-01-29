@@ -64,7 +64,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"Na cozinha."',
           words: ['In', 'the', 'kitchen.'],
           correct: 'In the kitchen.',
           feedback: { success: { title: 'Ótimo!', text: 'Na cozinha.' } }
@@ -93,7 +93,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Ao lado',
-          instruction: 'Monte a frase',
+          instruction: '"A cadeira está ao lado da mesa."',
           words: ['The', 'chair', 'is', 'next', 'to', 'the', 'table.'],
           correct: 'The chair is next to the table.',
           feedback: { success: { title: 'Perfeito!', text: 'A cadeira está ao lado da mesa.' } }
@@ -122,7 +122,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'A geladeira',
-          instruction: 'Monte a frase',
+          instruction: '"A geladeira está ao lado da porta."',
           words: ['The', 'fridge', 'is', 'next', 'to', 'the', 'door.'],
           correct: 'The fridge is next to the door.',
           feedback: { success: { title: 'Ótimo!', text: 'A geladeira está ao lado da porta.' } }
@@ -188,7 +188,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Frase completa',
-          instruction: 'Monte a frase',
+          instruction: '"O gato está na caixa."',
           words: ['The', 'cat', 'is', 'in', 'the', 'box.'],
           correct: 'The cat is in the box.',
           feedback: { success: { title: 'Gato na caixa!', text: 'Você dominou IN, ON, UNDER e NEXT TO!' } }

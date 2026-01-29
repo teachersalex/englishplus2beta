@@ -5,7 +5,7 @@
  *  — Walter Benjamin
  * 
  * Arquivo principal que exporta o mapa completo
- * Parte 1: 5 nodes × 3 levels × 5 atividades = 75 atividades
+ * 10 nodes × 3 levels × 5 atividades = 150 atividades
  */
 
 import { map2Config } from './config';

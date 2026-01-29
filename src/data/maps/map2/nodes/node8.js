@@ -39,7 +39,7 @@ export const node8Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'O telefone da Maria',
-          instruction: 'Monte a frase',
+          instruction: '"O telefone da Maria."',
           words: ["Maria's", 'phone.'],
           correct: "Maria's phone.",
           feedback: { success: { title: 'Isso!', text: 'O telefone da Maria.' } }
@@ -107,7 +107,7 @@ export const node8Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase complexa',
-          instruction: 'Monte a frase',
+          instruction: '"É o carro da minha mãe."',
           words: ['It', 'is', 'my', "mother's", 'car.'],
           correct: "It is my mother's car.",
           feedback: { success: { title: 'Excelente!', text: 'É o carro da minha mãe.' } }
@@ -116,7 +116,7 @@ export const node8Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Pergunta',
-          instruction: 'Monte a pergunta',
+          instruction: '"De quem é esta bolsa?"',
           words: ['Whose', 'bag', 'is', 'this?'],
           correct: 'Whose bag is this?',
           feedback: { success: { title: 'Perfeito!', text: 'De quem é esta bolsa?' } }
@@ -132,7 +132,7 @@ export const node8Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Nome do irmão',
-          instruction: 'Monte a frase',
+          instruction: '"O nome do meu irmão é Leo."',
           words: ['My', "brother's", 'name', 'is', 'Leo.'],
           correct: "My brother's name is Leo.",
           feedback: { success: { title: 'Excelente!', text: 'O nome do meu irmão é Leo.' } }
@@ -161,7 +161,7 @@ export const node8Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Pergunta completa',
-          instruction: 'Monte a frase',
+          instruction: '"De quem são estes sapatos?"',
           words: ['Whose', 'shoes', 'are', 'these?'],
           correct: 'Whose shoes are these?',
           feedback: { success: { title: 'Perfeito!', text: 'De quem são estes sapatos?' } }

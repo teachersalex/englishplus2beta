@@ -89,7 +89,7 @@ export const node6Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Atrás do sofá',
-          instruction: 'Monte a frase',
+          instruction: '"Atrás do sofá."',
           words: ['Behind', 'the', 'sofa.'],
           correct: 'Behind the sofa.',
           feedback: { success: { title: 'Perfeito!', text: 'Atrás do sofá.' } }
@@ -108,7 +108,7 @@ export const node6Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"O gato está atrás de você."',
           words: ['The', 'cat', 'is', 'behind', 'you.'],
           correct: 'The cat is behind you.',
           feedback: { success: { title: 'Cuidado!', text: 'O gato está atrás de você!' } }
@@ -133,7 +133,7 @@ export const node6Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Frase longa',
-          instruction: 'Monte a frase',
+          instruction: '"Eu estou na frente da sua casa."',
           words: ['I', 'am', 'in', 'front', 'of', 'your', 'house.'],
           correct: 'I am in front of your house.',
           feedback: { success: { title: 'Excelente!', text: 'Estou na frente da sua casa.' } }

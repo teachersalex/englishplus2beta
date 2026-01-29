@@ -32,7 +32,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Minha casa',
-          instruction: 'Monte a frase',
+          instruction: '"Minha casa."',
           words: ['My', 'house.'],
           correct: 'My house.',
           feedback: { success: { title: 'Isso!', text: 'Minha casa.' } }
@@ -80,7 +80,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Seu carro',
-          instruction: 'Monte a frase',
+          instruction: '"Seu carro é azul."',
           words: ['Your', 'car', 'is', 'blue.'],
           correct: 'Your car is blue.',
           feedback: { success: { title: 'Ótimo!', text: 'Seu carro é azul.' } }
@@ -89,7 +89,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Meu cachorro',
-          instruction: 'Monte a frase',
+          instruction: '"Meu cachorro está feliz."',
           words: ['My', 'dog', 'is', 'happy.'],
           correct: 'My dog is happy.',
           feedback: { success: { title: 'Perfeito!', text: 'Meu cachorro está feliz.' } }
@@ -121,7 +121,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Pergunta',
-          instruction: 'Monte a pergunta',
+          instruction: '"Este é o seu telefone?"',
           words: ['Is', 'this', 'your', 'phone?'],
           correct: 'Is this your phone?',
           feedback: { success: { title: 'Excelente!', text: 'Este é o seu telefone?' } }
@@ -157,7 +157,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Combinando tudo',
-          instruction: 'Posse + Preposição!',
+          instruction: '"Meu computador está na sua mesa."',
           words: ['My', 'computer', 'is', 'on', 'your', 'table.'],
           correct: 'My computer is on your table.',
           feedback: { success: { title: 'EXCELENTE!', text: 'Meu computador está na sua mesa. Combo!' } }

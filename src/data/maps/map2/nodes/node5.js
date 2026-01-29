@@ -88,7 +88,7 @@ export const node5Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Nome dele',
-          instruction: 'Monte a frase',
+          instruction: '"O nome dele é John."',
           words: ['His', 'name', 'is', 'John.'],
           correct: 'His name is John.',
           feedback: { success: { title: 'Perfeito!', text: 'O nome dele é John.' } }
@@ -97,7 +97,7 @@ export const node5Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Carro dela',
-          instruction: 'Monte a frase',
+          instruction: '"O carro dela é vermelho."',
           words: ['Her', 'car', 'is', 'red.'],
           correct: 'Her car is red.',
           feedback: { success: { title: 'Ótimo!', text: 'O carro dela é vermelho.' } }
@@ -129,7 +129,7 @@ export const node5Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'A bolsa',
-          instruction: 'Monte a frase',
+          instruction: '"Esta é a bolsa dela."',
           words: ['This', 'is', 'her', 'bag.'],
           correct: 'This is her bag.',
           feedback: { success: { title: 'Excelente!', text: 'Esta é a bolsa dela.' } }
@@ -175,7 +175,7 @@ export const node5Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Relações',
-          instruction: 'Monte a frase',
+          instruction: '"O pai dele é meu professor."',
           words: ['His', 'father', 'is', 'my', 'teacher.'],
           correct: 'His father is my teacher.',
           feedback: { success: { title: 'EXCELENTE!', text: 'O pai dele é meu professor. Dois possessivos!' } }

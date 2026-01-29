@@ -80,7 +80,7 @@ export const node7Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Nossa família',
-          instruction: 'Monte a frase',
+          instruction: '"Nossa família é grande."',
           words: ['Our', 'family', 'is', 'big.'],
           correct: 'Our family is big.',
           feedback: { success: { title: 'Perfeito!', text: 'Nossa família é grande.' } }
@@ -89,7 +89,7 @@ export const node7Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'A casa deles',
-          instruction: 'Monte a frase',
+          instruction: '"A casa deles é pequena."',
           words: ['Their', 'house', 'is', 'small.'],
           correct: 'Their house is small.',
           feedback: { success: { title: 'Ótimo!', text: 'A casa deles é pequena.' } }
@@ -158,7 +158,7 @@ export const node7Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Combo de possessivos',
-          instruction: 'Monte a frase',
+          instruction: '"Nossos amigos estão na casa deles."',
           words: ['Our', 'friends', 'are', 'in', 'their', 'house.'],
           correct: 'Our friends are in their house.',
           feedback: { success: { title: 'EXCELENTE!', text: 'Nossos amigos estão na casa deles. Dois possessivos!' } }
@@ -167,7 +167,7 @@ export const node7Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Nosso problema',
-          instruction: 'Monte a frase',
+          instruction: '"Este é o nosso problema."',
           words: ['This', 'is', 'our', 'problem.'],
           correct: 'This is our problem.',
           feedback: { success: { title: 'Perfeito!', text: 'Este é o nosso problema.' } }

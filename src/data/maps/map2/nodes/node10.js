@@ -19,7 +19,7 @@ export const node10Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'O sofá',
-          instruction: 'Monte a frase',
+          instruction: '"O sofá está na sala."',
           words: ['The', 'sofa', 'is', 'in', 'the', 'living', 'room.'],
           correct: 'The sofa is in the living room.',
           feedback: { success: { title: 'Perfeito!', text: 'O sofá está na sala.' } }
@@ -78,7 +78,7 @@ export const node10Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'A cadeira da mãe',
-          instruction: 'Monte a frase',
+          instruction: '"A cadeira da minha mãe é vermelha."',
           words: ['My', "mother's", 'chair', 'is', 'red.'],
           correct: "My mother's chair is red.",
           feedback: { success: { title: 'Excelente!', text: 'A cadeira da minha mãe é vermelha.' } }
@@ -110,7 +110,7 @@ export const node10Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Pergunta',
-          instruction: 'Monte a pergunta',
+          instruction: '"Aquela é sua cama?"',
           words: ['Is', 'that', 'your', 'bed?'],
           correct: 'Is that your bed?',
           feedback: { success: { title: 'Perfeito!', text: 'Aquela é sua cama?' } }
@@ -145,7 +145,7 @@ export const node10Data = {
           type: 'sentence_builder',
           label: 'Desafio',
           title: 'Frase complexa',
-          instruction: 'Monte a frase',
+          instruction: '"Minhas chaves estão entre o livro e a lâmpada."',
           words: ['My', 'keys', 'are', 'between', 'the', 'book', 'and', 'the', 'lamp.'],
           correct: 'My keys are between the book and the lamp.',
           feedback: { success: { title: 'PERFEITO!', text: 'Minhas chaves estão entre o livro e a lâmpada.' } }

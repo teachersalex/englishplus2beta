@@ -30,7 +30,7 @@ export const node9Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Minha caneta',
-          instruction: 'Monte a frase',
+          instruction: '"Isto é minha caneta."',
           words: ['This', 'is', 'my', 'pen.'],
           correct: 'This is my pen.',
           feedback: { success: { title: 'Isso!', text: 'Isto é minha caneta (está na minha mão).' } }
@@ -39,7 +39,7 @@ export const node9Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Seu carro',
-          instruction: 'Monte a frase',
+          instruction: '"Aquilo é seu carro."',
           words: ['That', 'is', 'your', 'car.'],
           correct: 'That is your car.',
           feedback: { success: { title: 'Perfeito!', text: 'Aquilo é seu carro (está longe).' } }
@@ -118,7 +118,7 @@ export const node9Data = {
           type: 'sentence_builder',
           label: 'Fechamento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"Aqueles são meus livros."',
           words: ['Those', 'are', 'my', 'books.'],
           correct: 'Those are my books.',
           feedback: { success: { title: 'Perfeito!', text: 'Aqueles são meus livros.' } }
