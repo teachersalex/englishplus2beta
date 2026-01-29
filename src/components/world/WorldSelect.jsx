@@ -1,25 +1,27 @@
 /**
  * WorldSelect.jsx
- * O MUNDO DO TEACHER ALEX
+ * 
+ * "Toda grande jornada começa com um primeiro passo."
+ *  — Lao Tzu
  * 
  * Zelda style: castelo é objetivo visual futuro
- * Ilhas clicáveis: Mapa 0 e Mapa 1
+ * Ilhas clicáveis: Mapa 0, 1 e 2
  * Ilhas locked: mistério, futuro
  */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Mundos CLICÁVEIS (mapas reais)
+// Mundos CLICÁVEIS (mapas reais) - posições em percentual
 const PLAYABLE_WORLDS = [
   { 
     id: 0, 
     name: 'A Chegada', 
     subtitle: 'Primeiros Passos', 
-    nodes: 5, 
+    nodes: 10, 
     icon: '⛵', 
     color: '#60A5FA', 
-    x: 350, 
-    y: 420 
+    x: 42,
+    y: 70 
   },
   { 
     id: 1, 
@@ -28,28 +30,33 @@ const PLAYABLE_WORLDS = [
     nodes: 10, 
     icon: '🌅', 
     color: '#A78BFA', 
-    x: 550, 
-    y: 300 
+    x: 62, 
+    y: 48 
+  },
+  { 
+    id: 2, 
+    name: 'A Casa', 
+    subtitle: 'Preposições & Possessivos', 
+    nodes: 5, 
+    icon: '🏠', 
+    color: '#34D399', 
+    x: 25, 
+    y: 55 
   },
 ];
 
-// Ilhas LOCKED (futuro, mistério)
+// Ilhas LOCKED (futuro, mistério) - em percentual, size fixo
 const LOCKED_ISLANDS = [
-  { id: 'future1', x: 180, y: 320 },
-  { id: 'future2', x: 720, y: 400 },
-  { id: 'future3', x: 120, y: 180 },
-  { id: 'future4', x: 780, y: 220 },
-  { id: 'future5', x: 450, y: 180 },
-  { id: 'future6', x: 250, y: 200 },
-  { id: 'future7', x: 650, y: 480 },
+  { id: 'future1', x: 78, y: 62, size: 0.75 },
+  { id: 'future2', x: 15, y: 28, size: 0.90 },
+  { id: 'future3', x: 85, y: 35, size: 0.70 },
+  { id: 'future4', x: 50, y: 28, size: 0.80 },
+  { id: 'future5', x: 72, y: 78, size: 0.78 },
 ];
 
 function PlayableIsland({ world, isSelected, onClick }) {
-  const scale = 1;
-  
   return (
     <g 
-      transform={`translate(${world.x}, ${world.y})`}
       style={{ cursor: 'pointer' }}
       onClick={() => onClick(world)}
     >
@@ -132,10 +139,10 @@ function PlayableIsland({ world, isSelected, onClick }) {
   );
 }
 
-function LockedIsland({ x, y, size = 1 }) {
+function LockedIsland({ size = 1 }) {
   const s = size;
   return (
-    <g transform={`translate(${x}, ${y})`}>
+    <g>
       {/* Sombra */}
       <ellipse
         cx={0}
@@ -179,9 +186,9 @@ function LockedIsland({ x, y, size = 1 }) {
   );
 }
 
-function DecorativeCastle({ x, y }) {
+function DecorativeCastle() {
   return (
-    <g transform={`translate(${x}, ${y})`} opacity="0.9">
+    <g opacity="0.9">
       {/* Ilha do castelo */}
       <ellipse cx={0} cy={35} rx={55} ry={22} fill="rgba(0,0,0,0.15)" />
       <ellipse cx={0} cy={28} rx={50} ry={20} fill="#6b7280" stroke="#4b5563" strokeWidth="2" />
@@ -227,26 +234,59 @@ function DecorativeCastle({ x, y }) {
   );
 }
 
+// Componente de nuvem
+function Cloud({ x, y, scale = 1 }) {
+  return (
+    <ellipse 
+      cx={x} 
+      cy={y} 
+      rx={45 * scale} 
+      ry={15 * scale} 
+      fill="rgba(255,255,255,0.15)" 
+    />
+  );
+}
+
 export default function WorldSelect({ onSelectWorld, onBack }) {
   const [selectedWorld, setSelectedWorld] = useState(null);
+  const [containerSize, setContainerSize] = useState({ width: 900, height: 600 });
+  const containerRef = useRef(null);
   const audioRef = useRef(null);
+  const fadeIntervalRef = useRef(null);
   
-  // Música ambiente
+  // Medir container
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({ width: rect.width, height: rect.height });
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+  
+  // Música ambiente (volume reduzido)
   useEffect(() => {
     const audio = new Audio('/audio/worldTheme.mp3');
     audio.loop = true;
     audio.volume = 0;
     audioRef.current = audio;
     
+    const targetVolume = 0.25;
+    
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
         let vol = 0;
-        const fadeIn = setInterval(() => {
+        fadeIntervalRef.current = setInterval(() => {
           vol += 0.02;
-          if (vol >= 0.3) {
-            audio.volume = 0.3;
-            clearInterval(fadeIn);
+          if (vol >= targetVolume) {
+            audio.volume = targetVolume;
+            clearInterval(fadeIntervalRef.current);
+            fadeIntervalRef.current = null;
           } else {
             audio.volume = vol;
           }
@@ -255,6 +295,10 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
     }
     
     return () => {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+      }
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -298,6 +342,10 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
       handleNavigate(() => onSelectWorld(selectedWorld.id));
     }
   };
+
+  // Converter percentual para pixels
+  const toX = (percent) => (percent / 100) * containerSize.width;
+  const toY = (percent) => (percent / 100) * containerSize.height;
   
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: '#0c4a6e' }}>
@@ -314,76 +362,77 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
         </button>
         <h1 className="text-white font-bold text-sm sm:text-base drop-shadow-lg flex items-center gap-2">
           <span>🏰</span>
-          <span>O Mundo do Teacher Alex</span>
+          <span>A Minha Jornada</span>
         </h1>
         <div className="w-16" />
       </header>
       
-      {/* Mapa */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Mapa - Background CSS + SVG elementos */}
+      <div 
+        ref={containerRef}
+        className="flex-1 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(to bottom, #38bdf8 0%, #0369a1 100%)',
+        }}
+      >
+        {/* Waves pattern via CSS */}
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='25'%3E%3Cpath d='M0 12 Q20 6 40 12 T80 12' fill='none' stroke='rgba(255,255,255,0.2)' stroke-width='2'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'repeat',
+          }}
+        />
+        
+        {/* SVG com elementos posicionados em % */}
         <svg 
-          viewBox="0 0 900 600"
           className="absolute inset-0 w-full h-full"
-          preserveAspectRatio="xMidYMid slice"
+          style={{ overflow: 'visible' }}
         >
-          <defs>
-            <linearGradient id="ocean" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#0369a1" />
-            </linearGradient>
-            <pattern id="waves" patternUnits="userSpaceOnUse" width="80" height="25">
-              <path d="M0 12 Q20 6 40 12 T80 12" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2"/>
-            </pattern>
-          </defs>
-          
-          {/* Oceano */}
-          <rect x="-100" y="-100" width="1100" height="800" fill="url(#ocean)" />
-          <rect x="-100" y="-100" width="1100" height="800" fill="url(#waves)" />
-          
           {/* Nuvens */}
-          <g fill="rgba(255,255,255,0.15)">
-            <ellipse cx="120" cy="70" rx="55" ry="18" />
-            <ellipse cx="750" cy="55" rx="45" ry="15" />
-            <ellipse cx="450" cy="40" rx="35" ry="12" />
-            <ellipse cx="850" cy="140" rx="40" ry="14" />
-            <ellipse cx="60" cy="250" rx="30" ry="10" />
-            <ellipse cx="300" cy="90" rx="40" ry="13" />
-            <ellipse cx="620" cy="100" rx="35" ry="11" />
+          <Cloud x={toX(12)} y={toY(10)} scale={1.2} />
+          <Cloud x={toX(88)} y={toY(8)} />
+          <Cloud x={toX(50)} y={toY(5)} scale={0.8} />
+          <Cloud x={toX(30)} y={toY(14)} scale={0.9} />
+          <Cloud x={toX(70)} y={toY(18)} scale={0.7} />
+          
+          {/* Castelo decorativo - topo centro */}
+          <g transform={`translate(${toX(50)}, ${toY(14)})`}>
+            <DecorativeCastle />
           </g>
           
-          {/* Castelo decorativo - OBJETIVO FUTURO */}
-          <DecorativeCastle x={450} y={80} />
-          
-          {/* Caminho dourado: Chegada → Despertar → (futuro) Castelo */}
+          {/* Caminhos dourados conectando os mundos */}
           <g fill="none" stroke="#e6c288" strokeWidth="3" strokeDasharray="12,8" strokeLinecap="round" opacity="0.4">
-            {/* Chegada → Despertar */}
-            <path d="M 350 420 Q 450 360 550 300" />
-            {/* Despertar → Castelo (mais fraco, futuro) */}
-            <path d="M 550 300 Q 500 200 450 140" opacity="0.3" strokeDasharray="8,12" />
+            {/* Chegada -> Despertar */}
+            <path d={`M ${toX(42)} ${toY(70)} Q ${toX(52)} ${toY(58)} ${toX(62)} ${toY(48)}`} />
+            {/* Chegada -> Casa */}
+            <path d={`M ${toX(42)} ${toY(70)} Q ${toX(32)} ${toY(62)} ${toX(25)} ${toY(55)}`} />
+            {/* Casa -> futuro (castelo) */}
+            <path d={`M ${toX(25)} ${toY(55)} Q ${toX(35)} ${toY(35)} ${toX(50)} ${toY(22)}`} opacity="0.25" strokeDasharray="8,12" />
+            {/* Despertar -> futuro (castelo) */}
+            <path d={`M ${toX(62)} ${toY(48)} Q ${toX(56)} ${toY(32)} ${toX(50)} ${toY(22)}`} opacity="0.25" strokeDasharray="8,12" />
           </g>
           
           {/* Ilhas LOCKED */}
-          {LOCKED_ISLANDS.map((island, i) => (
-            <LockedIsland 
-              key={island.id} 
-              x={island.x} 
-              y={island.y} 
-              size={0.7 + Math.random() * 0.3}
-            />
+          {LOCKED_ISLANDS.map((island) => (
+            <g key={island.id} transform={`translate(${toX(island.x)}, ${toY(island.y)})`}>
+              <LockedIsland size={island.size} />
+            </g>
           ))}
           
           {/* Ilhas JOGÁVEIS */}
           {PLAYABLE_WORLDS.map((world) => (
-            <PlayableIsland
-              key={world.id}
-              world={world}
-              isSelected={selectedWorld?.id === world.id}
-              onClick={handleWorldClick}
-            />
+            <g key={world.id} transform={`translate(${toX(world.x)}, ${toY(world.y)})`}>
+              <PlayableIsland
+                world={world}
+                isSelected={selectedWorld?.id === world.id}
+                onClick={handleWorldClick}
+              />
+            </g>
           ))}
           
-          {/* Bússola */}
-          <g transform="translate(850, 550)">
+          {/* Bússola - canto inferior direito */}
+          <g transform={`translate(${toX(92)}, ${toY(90)})`}>
             <circle r="20" fill="rgba(0,0,0,0.25)" />
             <circle r="16" fill="#1e3a5f" stroke="#e6c288" strokeWidth="1.5" />
             <text y="-4" textAnchor="middle" fill="#e6c288" fontSize="9" fontWeight="bold">N</text>

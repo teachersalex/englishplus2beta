@@ -2,14 +2,15 @@
  * useProgress.js
  * Fonte única de verdade para progresso do aluno
  * 
+ * "Medir é saber." — Lord Kelvin
+ * 
  * ARQUITETURA DE CONQUISTAS:
  * - earnedAchievements: JÁ CELEBRADAS (badge acende na Home)
  * - pendingAchievements: NA FILA (aguardando modal)
  * 
- * FLUXO:
- * 1. Detecta novas → adiciona em PENDING
- * 2. Celebra 1 → move de PENDING para EARNED
- * 3. Badge só aparece após celebrar
+ * CHAVES DE PROGRESSO:
+ * - Formato: map{mapId}:node{nodeId}-{levelId}
+ * - Exemplo: map0:node1-beginner, map1:node3-intermediate
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -25,8 +26,8 @@ const INITIAL_PROGRESS = {
   lastActivity: null,
   completedLevels: {},
   storyProgress: {},
-  earnedAchievements: [],   // JÁ CELEBRADAS
-  pendingAchievements: [],  // NA FILA
+  earnedAchievements: [],
+  pendingAchievements: [],
 };
 
 export function useProgress(user) {
@@ -64,22 +65,16 @@ export function useProgress(user) {
 
   // === ACHIEVEMENTS ===
 
-  /**
-   * Detecta novas conquistas e adiciona na fila PENDING
-   * Retorna array de IDs adicionados (ordenados por prioridade)
-   */
   const detectAndQueueAchievements = useCallback(async (updatedProgress) => {
     if (!userId) return [];
     
     const earned = updatedProgress.earnedAchievements || progress.earnedAchievements || [];
     const pending = updatedProgress.pendingAchievements || progress.pendingAchievements || [];
     
-    // Detecta novas (exclui earned e pending)
     const newlyUnlocked = checkNewAchievements(updatedProgress, earned, pending);
     
     if (newlyUnlocked.length === 0) return [];
     
-    // Adiciona na fila
     const docRef = doc(db, 'users', userId);
     await updateDoc(docRef, {
       pendingAchievements: arrayUnion(...newlyUnlocked),
@@ -88,9 +83,6 @@ export function useProgress(user) {
     return newlyUnlocked;
   }, [userId, progress.earnedAchievements, progress.pendingAchievements]);
 
-  /**
-   * Move conquista de PENDING para EARNED (após celebrar com modal)
-   */
   const celebrateAchievement = useCallback(async (achievementId) => {
     if (!userId || !achievementId) return;
     
@@ -101,62 +93,72 @@ export function useProgress(user) {
     });
   }, [userId]);
 
-  /**
-   * Pega próxima conquista da fila (a de maior prioridade)
-   * Não remove, só retorna
-   */
   const getNextPendingAchievement = useCallback(() => {
     const pending = progress.pendingAchievements || [];
     if (pending.length === 0) return null;
-    
-    // Já vem ordenado por prioridade do checkNewAchievements
-    // Mas se não vier, a primeira é a mais prioritária
     return pending[0];
   }, [progress.pendingAchievements]);
 
-  // === NODE PROGRESS ===
+  // === NODE PROGRESS (COM mapId) ===
   
-  const getNodeState = useCallback((nodeId) => {
+  /**
+   * Retorna estado do node para um mapa específico
+   * @param {number} mapId - ID do mapa (0, 1, 2...)
+   * @param {number} nodeId - ID do node (1, 2, 3...)
+   */
+  const getNodeState = useCallback((mapId, nodeId) => {
+    const prefix = `map${mapId}:node${nodeId}-`;
     const completedCount = Object.keys(progress.completedLevels)
-      .filter(key => key.startsWith(`node${nodeId}-`)).length;
+      .filter(key => key.startsWith(prefix)).length;
     
     if (completedCount >= 3) return 'completed';
     if (completedCount > 0) return 'in_progress';
     if (nodeId === 1) return 'unlocked';
     
+    // Verifica se node anterior está completo
+    const prevPrefix = `map${mapId}:node${nodeId - 1}-`;
     const prevCompleted = Object.keys(progress.completedLevels)
-      .filter(key => key.startsWith(`node${nodeId - 1}-`)).length;
+      .filter(key => key.startsWith(prevPrefix)).length;
     
     return prevCompleted >= 3 ? 'unlocked' : 'locked';
   }, [progress.completedLevels]);
 
-  const getNodeProgress = useCallback((nodeId) => {
+  /**
+   * Retorna quantos levels foram completos no node
+   */
+  const getNodeProgress = useCallback((mapId, nodeId) => {
+    const prefix = `map${mapId}:node${nodeId}-`;
     return Object.keys(progress.completedLevels)
-      .filter(key => key.startsWith(`node${nodeId}-`)).length;
+      .filter(key => key.startsWith(prefix)).length;
   }, [progress.completedLevels]);
 
-  const isLevelCompleted = useCallback((nodeId, levelId) => {
-    return !!progress.completedLevels[`node${nodeId}-${levelId}`];
+  /**
+   * Verifica se um level específico foi completo
+   */
+  const isLevelCompleted = useCallback((mapId, nodeId, levelId) => {
+    const key = `map${mapId}:node${nodeId}-${levelId}`;
+    return !!progress.completedLevels[key];
   }, [progress.completedLevels]);
 
-  const getNextLevel = useCallback((nodeId, levels) => {
+  /**
+   * Retorna próximo level não completo
+   */
+  const getNextLevel = useCallback((mapId, nodeId, levels) => {
     if (!levels) return null;
-    return levels.find(level => !isLevelCompleted(nodeId, level.id));
+    return levels.find(level => !isLevelCompleted(mapId, nodeId, level.id));
   }, [isLevelCompleted]);
 
   /**
    * Completa um level e detecta conquistas
-   * Retorna { newlyUnlocked: string[] }
    */
-  const completeLevel = useCallback(async (nodeId, levelId, result) => {
+  const completeLevel = useCallback(async (mapId, nodeId, levelId, result) => {
     if (!userId) return { newlyUnlocked: [] };
     
-    const key = `node${nodeId}-${levelId}`;
+    const key = `map${mapId}:node${nodeId}-${levelId}`;
     const xpGained = result.xpEarned || 0;
     const earnedDiamond = result.earnedDiamond || false;
     const docRef = doc(db, 'users', userId);
 
-    // Atualização atômica
     const updates = {
       [`completedLevels.${key}`]: {
         accuracy: result.accuracy,
@@ -173,7 +175,6 @@ export function useProgress(user) {
 
     await updateDoc(docRef, updates);
 
-    // Calcula novo level
     const newXP = progress.xp + xpGained;
     const newLevel = Math.floor(newXP / 500) + 1;
     
@@ -181,7 +182,6 @@ export function useProgress(user) {
       await updateDoc(docRef, { level: newLevel });
     }
 
-    // Simula progresso atualizado para detectar conquistas
     const updatedProgress = {
       ...progress,
       xp: newXP,
@@ -193,7 +193,6 @@ export function useProgress(user) {
       },
     };
 
-    // Detecta e enfileira conquistas
     const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
 
     return { newlyUnlocked, newLevel };
@@ -233,7 +232,6 @@ export function useProgress(user) {
 
     await updateDoc(docRef, updates);
 
-    // Simula progresso atualizado para detectar conquistas
     const updatedProgress = {
       ...progress,
       storyProgress: {
@@ -243,7 +241,6 @@ export function useProgress(user) {
       diamonds: (progress.diamonds || 0) + (isNewDiamond ? 1 : 0),
     };
 
-    // Detecta e enfileira conquistas
     const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
 
     return { 
@@ -277,7 +274,7 @@ export function useProgress(user) {
     progress,
     loading,
     
-    // Node
+    // Node (agora com mapId)
     getNodeState,
     getNodeProgress,
     isLevelCompleted,

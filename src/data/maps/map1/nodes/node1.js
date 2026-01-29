@@ -1,6 +1,6 @@
 /**
- * NODE 1: O ESPELHO
- * 3 levels × 5 atividades = 15 atividades
+ * Node 1: O Espelho
+ * Tema: Verb To Be
  */
 export const node1Data = {
   id: 1,
@@ -11,7 +11,7 @@ export const node1Data = {
   
   levels: [
     {
-      id: '1_bronze',
+      id: '1_1_bronze',
       title: 'O Despertar',
       color: '#cd7f32',
       activities: [
@@ -58,6 +58,7 @@ export const node1Data = {
             { portuguese: 'Nós', english: 'We' },
             { portuguese: 'Eles', english: 'They' },
           ],
+          feedback: { success: { title: 'Ótimo!', text: 'Pronomes dominados!' } }
         },
         {
           type: 'multiple_choice',
@@ -75,7 +76,7 @@ export const node1Data = {
       ]
     },
     {
-      id: '1_silver',
+      id: '1_1_silver',
       title: 'A Voz',
       color: '#c0c0c0',
       activities: [
@@ -83,7 +84,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Monte a frase',
-          instruction: 'Organize as palavras',
+          instruction: '"Eu sou do Brasil."',
           words: ['I', 'am', 'from', 'Brazil.'],
           correct: 'I am from Brazil.',
           feedback: { success: { title: 'Ótimo!', text: 'Sem "the" antes de Brazil.' } }
@@ -102,7 +103,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Defina a profissão',
-          instruction: 'Monte a frase',
+          instruction: '"Ele é um médico."',
           words: ['He', 'is', 'a', 'doctor.'],
           correct: 'He is a doctor.',
           feedback: { success: { title: 'Muito bem!', text: 'Não esqueça do "a" antes da profissão.' } }
@@ -117,6 +118,7 @@ export const node1Data = {
             { portuguese: 'Você (You)', english: 'are' },
             { portuguese: 'Ele (He)', english: 'is' },
           ],
+          feedback: { success: { title: 'Perfeito!', text: 'A tabela sagrada do To Be!' } }
         },
         {
           type: 'multiple_choice',
@@ -134,7 +136,7 @@ export const node1Data = {
       ]
     },
     {
-      id: '1_gold',
+      id: '1_1_gold',
       title: 'A Identidade',
       color: '#ffd700',
       activities: [
@@ -162,7 +164,7 @@ export const node1Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase longa',
-          instruction: 'Monte a frase complexa',
+          instruction: '"Eu sou professor e eu sou feliz."',
           words: ['I', 'am', 'a', 'teacher', 'and', 'I', 'am', 'happy.'],
           correct: 'I am a teacher and I am happy.',
           feedback: { success: { title: 'Excelente!', text: 'Frase complexa dominada.' } }

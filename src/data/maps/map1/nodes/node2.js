@@ -1,6 +1,6 @@
 /**
- * NODE 2: O VIZINHO
- * 3 levels × 5 atividades = 15 atividades
+ * Node 2: O Vizinho
+ * Tema: Verb To Be - He/She/It
  */
 export const node2Data = {
   id: 2,
@@ -11,7 +11,7 @@ export const node2Data = {
   
   levels: [
     {
-      id: '2_bronze',
+      id: '1_2_bronze',
       title: 'A Família',
       color: '#cd7f32',
       activities: [
@@ -26,6 +26,7 @@ export const node2Data = {
             { portuguese: 'Irmão', english: 'Brother' },
             { portuguese: 'Irmã', english: 'Sister' },
           ],
+          feedback: { success: { title: 'Perfeito!', text: 'Família em inglês!' } }
         },
         {
           type: 'category_sort',
@@ -42,6 +43,7 @@ export const node2Data = {
             { id: 3, text: 'Husband', category: 'he' },
             { id: 4, text: 'Wife', category: 'she' }
           ],
+          feedback: { success: { title: 'Ótimo!', text: 'Gênero dominado!' } }
         },
         {
           type: 'fill_gap',
@@ -77,7 +79,7 @@ export const node2Data = {
       ]
     },
     {
-      id: '2_silver',
+      id: '1_2_silver',
       title: 'Apresentações',
       color: '#c0c0c0',
       activities: [
@@ -85,7 +87,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Apresente sua mãe',
-          instruction: 'Monte a frase',
+          instruction: '"Esta é minha mãe."',
           words: ['This', 'is', 'my', 'mother.'],
           correct: 'This is my mother.',
           feedback: { success: { title: 'Formal e correto!', text: '' } }
@@ -114,7 +116,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Profissão dela',
-          instruction: 'Monte a frase',
+          instruction: '"Minha mãe é dentista."',
           words: ['My', 'mother', 'is', 'a', 'dentist.'],
           correct: 'My mother is a dentist.',
           feedback: { success: { title: 'Boa estrutura!', text: 'Sujeito + Verbo + Artigo + Profissão.' } }
@@ -135,7 +137,7 @@ export const node2Data = {
       ]
     },
     {
-      id: '2_gold',
+      id: '1_2_gold',
       title: 'O Grupo',
       color: '#ffd700',
       activities: [
@@ -163,7 +165,7 @@ export const node2Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase longa',
-          instruction: 'Monte a frase',
+          instruction: '"Meu pai é alto e bonito."',
           words: ['My', 'father', 'is', 'tall', 'and', 'handsome.'],
           correct: 'My father is tall and handsome.',
           feedback: { success: { title: 'Uau!', text: 'Dois adjetivos na mesma frase.' } }

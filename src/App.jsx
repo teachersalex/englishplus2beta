@@ -2,14 +2,21 @@
  * App.jsx
  * EnglishPlus 2.0 - Arquitetura de Conquistas Redesenhada
  * 
+ * "A simplicidade é a sofisticação máxima."
+ *  — Leonardo da Vinci
+ * 
  * FLUXO DE CONQUISTAS:
  * 1. completeLevel() detecta e adiciona em PENDING
  * 2. LessonRunner mostra modal da primeira (mais prioritária)
  * 3. Após celebrar, celebrateAchievement() move para EARNED
  * 4. Badge na Home só mostra EARNED
+ * 
+ * UX FIXES:
+ * - Scroll to top em mudança de seção
+ * - Botão voltar do browser navega dentro do app
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { useProgress } from './hooks/useProgress';
@@ -30,7 +37,6 @@ import StoriesHub from './components/stories/StoriesHub';
 import EpisodePlayer from './components/stories/EpisodePlayer';
 
 // Data - loader centralizado
-import { nodesData, NODE_COUNT } from './data/nodes';
 import { getMapData } from './data/maps/mapsConfig';
 
 function AppContent() {
@@ -38,7 +44,7 @@ function AppContent() {
   const [currentSection, setCurrentSection] = useState('home');
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isInLesson, setIsInLesson] = useState(false);
-  const [currentMapId, setCurrentMapId] = useState(0); // qual mapa está selecionado
+  const [currentMapId, setCurrentMapId] = useState(0);
   
   // Stories state
   const [currentStorySection, setCurrentStorySection] = useState('hub');
@@ -50,13 +56,93 @@ function AppContent() {
     loading: progressLoading,
     getNodeState,
     getNodeProgress,
-    isLevelCompleted,
     getNextLevel,
     completeLevel,
     resetProgress,
     updateStoryProgress,
     celebrateAchievement,
   } = useProgress(user);
+
+  // ============================================
+  // SCROLL TO TOP em mudança de seção
+  // ============================================
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentSection, currentStorySection, isInLesson]);
+
+  // ============================================
+  // BROWSER BACK BUTTON - Navega dentro do app
+  // ============================================
+  const getBackDestination = useCallback(() => {
+    // Em lição → volta pro mapa
+    if (isInLesson) return { type: 'exitLesson' };
+    
+    // Em mapa → volta pro world select
+    if (currentSection === 'map') return { type: 'section', to: 'adventure' };
+    
+    // Em world select → volta pra home
+    if (currentSection === 'adventure') return { type: 'section', to: 'home' };
+    
+    // Em stories player → volta pro hub
+    if (currentSection === 'stories' && currentStorySection === 'player') {
+      return { type: 'storiesHub' };
+    }
+    
+    // Em stories hub → volta pra home
+    if (currentSection === 'stories' && currentStorySection === 'hub') {
+      return { type: 'section', to: 'home' };
+    }
+    
+    // Em outras seções (stats, training, profile) → volta pra home
+    if (currentSection !== 'home') return { type: 'section', to: 'home' };
+    
+    // Já está na home → não faz nada (deixa o browser sair se quiser)
+    return null;
+  }, [currentSection, currentStorySection, isInLesson]);
+
+  useEffect(() => {
+    // Push state inicial
+    const pushState = () => {
+      window.history.pushState({ app: true }, '');
+    };
+
+    // Handler do botão voltar
+    const handlePopState = (e) => {
+      const destination = getBackDestination();
+      
+      if (!destination) {
+        // Está na home, deixa sair
+        return;
+      }
+      
+      // Previne saída do app
+      pushState();
+      
+      // Navega internamente
+      switch (destination.type) {
+        case 'exitLesson':
+          setIsInLesson(false);
+          setCurrentLesson(null);
+          setCurrentSection('map');
+          break;
+        case 'storiesHub':
+          setCurrentStorySection('hub');
+          setSelectedSeriesId(null);
+          break;
+        case 'section':
+          setCurrentSection(destination.to);
+          break;
+      }
+    };
+
+    // Setup inicial
+    pushState();
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [getBackDestination]);
 
   // Dados do usuário
   const userData = {
@@ -67,17 +153,22 @@ function AppContent() {
 
   // Encontra próxima lição disponível
   const getNextLessonInfo = () => {
-    for (let i = 1; i <= NODE_COUNT; i++) {
-      const state = getNodeState(i);
+    const mapData = getMapData(currentMapId);
+    if (!mapData) return { title: 'Tudo completo!', module: 'Parabéns!', theme: '' };
+    
+    const nodeCount = mapData.nodes?.length || 10;
+    
+    for (let i = 1; i <= nodeCount; i++) {
+      const state = getNodeState(currentMapId, i);
       if (state === 'unlocked' || state === 'in_progress') {
-        const node = nodesData[i];
+        const node = mapData.nodesData?.[i];
         if (node?.levels) {
-          const nextLevel = getNextLevel(i, node.levels);
+          const nextLevel = getNextLevel(currentMapId, i, node.levels);
           if (nextLevel) {
             return {
               nodeId: i,
               title: node.title,
-              module: `${getNodeProgress(i) + 1}/3`,
+              module: `${getNodeProgress(currentMapId, i) + 1}/3`,
               theme: node.theme,
               node,
               level: nextLevel,
@@ -97,7 +188,7 @@ function AppContent() {
     const node = mapData.nodesData?.[nodeId];
     if (!node) return;
 
-    const nextLevel = getNextLevel(nodeId, node.levels);
+    const nextLevel = getNextLevel(currentMapId, nodeId, node.levels);
     if (!nextLevel) return;
 
     setCurrentLesson({
@@ -105,7 +196,7 @@ function AppContent() {
       mapId: currentMapId,
       node: node,
       level: nextLevel,
-      currentRound: getNodeProgress(nodeId) + 1,
+      currentRound: getNodeProgress(currentMapId, nodeId) + 1,
     });
     setIsInLesson(true);
   };
@@ -121,13 +212,14 @@ function AppContent() {
 
   // Tela de Lição (fullscreen)
   if (isInLesson && currentLesson) {
-    const { nodeId, node, level, currentRound } = currentLesson;
+    const { nodeId, mapId, node, level, currentRound } = currentLesson;
     
     return (
       <LessonRunner
         lesson={{
           id: level.id,
           nodeId: nodeId,
+          mapId: mapId,
           title: node.title,
           theme: node.theme,
           tip: node.tip,
@@ -137,7 +229,7 @@ function AppContent() {
           totalRounds: 3,
         }}
         onComplete={async (result) => {
-          const { newlyUnlocked } = await completeLevel(nodeId, level.id, {
+          const { newlyUnlocked } = await completeLevel(mapId, nodeId, level.id, {
             accuracy: result.accuracy || 0,
             xpEarned: result.xp || 0,
             earnedDiamond: result.earnedDiamond || false,
@@ -175,7 +267,7 @@ function AppContent() {
 
   // Clicou em node no mapa
   const handleSelectNode = (nodeId) => {
-    const state = getNodeState(nodeId);
+    const state = getNodeState(currentMapId, nodeId);
     if (state === 'locked') return;
     startNodeLesson(nodeId);
   };
@@ -216,8 +308,8 @@ function AppContent() {
       <MapScreen
         mapId={currentMapId}
         onSelectNode={handleSelectNode}
-        getNodeState={getNodeState}
-        getNodeProgress={getNodeProgress}
+        getNodeState={(nodeId) => getNodeState(currentMapId, nodeId)}
+        getNodeProgress={(nodeId) => getNodeProgress(currentMapId, nodeId)}
         onBack={() => setCurrentSection('adventure')}
         onReset={resetProgress}
       />

@@ -1,6 +1,6 @@
 /**
- * NODE 4: O MERCADO
- * 3 levels × 5 atividades = 15 atividades
+ * Node 4: O Mercado
+ * Tema: Present Simple (He/She)
  */
 export const node4Data = {
   id: 4,
@@ -11,7 +11,7 @@ export const node4Data = {
   
   levels: [
     {
-      id: '4_bronze',
+      id: '1_4_bronze',
       title: 'Os Detetives',
       color: '#cd7f32',
       activities: [
@@ -30,6 +30,7 @@ export const node4Data = {
             { id: 3, text: 'The doctor', category: 'comS' },
             { id: 4, text: 'We', category: 'semS' }
           ],
+          feedback: { success: { title: 'Ótimo!', text: 'Você sabe quem precisa do S!' } }
         },
         {
           type: 'fill_gap',
@@ -60,6 +61,7 @@ export const node4Data = {
             { portuguese: 'Ele vai', english: 'He goes' },
             { portuguese: 'Ela tem', english: 'She has' },
           ],
+          feedback: { success: { title: 'Perfeito!', text: 'Atenção: Go vira Goes, Have vira Has!' } }
         },
         {
           type: 'multiple_choice',
@@ -76,7 +78,7 @@ export const node4Data = {
       ]
     },
     {
-      id: '4_silver',
+      id: '1_4_silver',
       title: 'A Rotina Dela',
       color: '#c0c0c0',
       activities: [
@@ -84,7 +86,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Ele vai à academia',
-          instruction: 'Monte a frase',
+          instruction: '"Ele vai à academia."',
           words: ['He', 'goes', 'to', 'the', 'gym.'],
           correct: 'He goes to the gym.',
           feedback: { success: { title: 'Boa!', text: 'GO vira GOES para ele.' } }
@@ -103,7 +105,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Minha esposa trabalha',
-          instruction: 'Monte',
+          instruction: '"Minha esposa trabalha em casa."',
           words: ['My', 'wife', 'works', 'at', 'home.'],
           correct: 'My wife works at home.',
           feedback: { success: { title: 'Perfeito!', text: 'My wife = Ela = Works.' } }
@@ -134,7 +136,7 @@ export const node4Data = {
       ]
     },
     {
-      id: '4_gold',
+      id: '1_4_gold',
       title: 'A Fofoca Completa',
       color: '#ffd700',
       activities: [
@@ -162,7 +164,7 @@ export const node4Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase complexa',
-          instruction: 'Monte',
+          instruction: '"Ele mora no Brasil mas trabalha nos EUA."',
           words: ['He', 'lives', 'in', 'Brazil', 'but', 'works', 'in', 'USA.'],
           correct: 'He lives in Brazil but works in USA.',
           feedback: { success: { title: 'Mestre!', text: 'Dois verbos com S.' } }

@@ -16,7 +16,7 @@ const NAV_ITEMS = [
     ),
   },
   { 
-    id: 'world', 
+    id: 'adventure',  // ← CORRIGIDO: era 'world'
     label: 'Mapa',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +129,7 @@ export function Sidebar({ currentSection, onNavigate, user, progress }) {
                         color: isActive ? COLORS.textLight : COLORS.secondary,
                       }}
                     >
-                      {progress.storyDiamonds} 💎
+                      {progress.storyDiamonds}
                     </span>
                   )}
                 </button>

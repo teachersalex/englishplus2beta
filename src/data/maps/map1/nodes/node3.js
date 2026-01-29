@@ -1,6 +1,6 @@
 /**
- * NODE 3: O GUARDIÃO
- * 3 levels × 5 atividades = 15 atividades
+ * Node 3: O Guardião
+ * Tema: Present Simple
  */
 export const node3Data = {
   id: 3,
@@ -11,7 +11,7 @@ export const node3Data = {
   
   levels: [
     {
-      id: '3_bronze',
+      id: '1_3_bronze',
       title: 'As Ações',
       color: '#cd7f32',
       activities: [
@@ -26,6 +26,7 @@ export const node3Data = {
             { portuguese: 'Estudar', english: 'Study' },
             { portuguese: 'Ir', english: 'Go' },
           ],
+          feedback: { success: { title: 'Ótimo!', text: 'Verbos essenciais!' } }
         },
         {
           type: 'fill_gap',
@@ -56,6 +57,7 @@ export const node3Data = {
             { portuguese: 'Almoçar', english: 'Have lunch' },
             { portuguese: 'Dormir', english: 'Sleep' },
           ],
+          feedback: { success: { title: 'Perfeito!', text: 'Rotina em inglês!' } }
         },
         {
           type: 'multiple_choice',
@@ -73,7 +75,7 @@ export const node3Data = {
       ]
     },
     {
-      id: '3_silver',
+      id: '1_3_silver',
       title: 'O Dia a Dia',
       color: '#c0c0c0',
       activities: [
@@ -81,7 +83,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Aquecimento',
           title: 'Que horas você acorda?',
-          instruction: 'Monte a frase',
+          instruction: '"Eu acordo às 6 da manhã."',
           words: ['I', 'wake', 'up', 'at', '6 am.'],
           correct: 'I wake up at 6 am.',
           feedback: { success: { title: 'Excelente!', text: 'Preposição de horas é "AT".' } }
@@ -100,7 +102,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Indo trabalhar',
-          instruction: 'Monte a frase',
+          instruction: '"Eu vou trabalhar de ônibus."',
           words: ['I', 'go', 'to', 'work', 'by', 'bus.'],
           correct: 'I go to work by bus.',
           feedback: { success: { title: 'Muito bom!', text: 'Meio de transporte: by bus.' } }
@@ -110,10 +112,10 @@ export const node3Data = {
           label: 'Prática',
           title: 'Encontre o intruso',
           instruction: 'Ache a palavra errada',
-          sentence: 'I am work every day.',
-          errorWord: 'am',
-          correction: '',
-          feedback: { success: { title: 'Isso!', text: 'Não diga "estou trabalho". Apenas "I work".' } }
+          sentence: 'I works every day.',
+          errorWord: 'works',
+          correction: 'work',
+          feedback: { success: { title: 'Isso!', text: 'Com "I", verbo sem S. "I work".' } }
         },
         {
           type: 'multiple_choice',
@@ -131,7 +133,7 @@ export const node3Data = {
       ]
     },
     {
-      id: '3_gold',
+      id: '1_3_gold',
       title: 'A Prova',
       color: '#ffd700',
       activities: [
@@ -140,10 +142,10 @@ export const node3Data = {
           label: 'Desafio',
           title: 'Erro fatal',
           instruction: 'Encontre a palavra errada',
-          sentence: 'I am study English.',
-          errorWord: 'am',
-          correction: '',
-          feedback: { success: { title: 'Corrigido!', text: 'Apenas "I study English".' } }
+          sentence: 'I studies English.',
+          errorWord: 'studies',
+          correction: 'study',
+          feedback: { success: { title: 'Corrigido!', text: 'Com "I", verbo na forma base: "I study".' } }
         },
         {
           type: 'fill_gap',
@@ -159,7 +161,7 @@ export const node3Data = {
           type: 'sentence_builder',
           label: 'Prática',
           title: 'Frase composta',
-          instruction: 'Monte a frase',
+          instruction: '"Eu trabalho e eu estudo inglês."',
           words: ['I', 'work', 'and', 'I', 'study', 'English.'],
           correct: 'I work and I study English.',
           feedback: { success: { title: 'Fluente!', text: 'Conectou duas ideias.' } }

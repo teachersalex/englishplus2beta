@@ -8,8 +8,7 @@ import AchievementGrid from '../achievements/AchievementGrid';
 /**
  * HomeScreen - EnglishPlus 2.0
  *
- * "Là, tout n'est qu'ordre et beauté,
- *  Luxe, calme et volupté."
+ * "Ali, tudo é ordem e perfeição. Luxo, calma, e sensação.
  *  — Charles Baudelaire
  */
 

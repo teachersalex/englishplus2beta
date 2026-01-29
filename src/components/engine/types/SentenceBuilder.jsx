@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, SHADOWS } from '../../../tokens';
 import { shuffleUntilDifferent } from '../../../utils/array';
@@ -14,20 +14,29 @@ function normalizeForComparison(str) {
 
 /**
  * SentenceBuilder Engine
+ * 
+ * "A ordem é a primeira lei do céu."
+ *  — Alexander Pope
+ * 
  * Monte a frase na ordem correta
  */
 export function SentenceBuilder({ data, onComplete }) {
   const { label, title, instruction, context, words, correct, alternatives, feedback } = data;
+  const instanceId = useId();
 
   const acceptedAnswers = useMemo(() => {
     const all = [correct, ...(alternatives || [])];
     return all.map(normalizeForComparison);
   }, [correct, alternatives]);
 
-  const shuffledWords = useMemo(() => 
-    shuffleUntilDifferent(words.map((word, index) => ({ id: index, text: word }))),
-    [words]
-  );
+  // IDs únicos: instanceId + index garante unicidade mesmo com palavras repetidas
+  const shuffledWords = useMemo(() => {
+    const wordsWithIds = words.map((word, index) => ({ 
+      id: `${instanceId}-${index}`, 
+      text: word 
+    }));
+    return shuffleUntilDifferent(wordsWithIds);
+  }, [words, instanceId]);
 
   const engine = useEngineState({ onComplete });
   const [dropzone, setDropzone] = useState([]);
@@ -38,16 +47,23 @@ export function SentenceBuilder({ data, onComplete }) {
   const handleWordClick = (wordObj, fromDropzone) => {
     if (engine.showResult || locked) return;
     setLocked(true);
-    setTimeout(() => setLocked(false), 150);
+    setTimeout(() => setLocked(false), 200);
 
     if (fromDropzone) {
       setDropzone(prev => prev.filter(w => w.id !== wordObj.id));
-      setBank(prev => [...prev, wordObj]);
+      setBank(prev => {
+        // Evita duplicata: só adiciona se não existir
+        if (prev.some(w => w.id === wordObj.id)) return prev;
+        return [...prev, wordObj];
+      });
       setDropzoneState(dropzone.length <= 1 ? 'empty' : 'active');
     } else {
-      const nextDropzone = [...dropzone, wordObj];
       setBank(prev => prev.filter(w => w.id !== wordObj.id));
-      setDropzone(nextDropzone);
+      setDropzone(prev => {
+        // Evita duplicata: só adiciona se não existir
+        if (prev.some(w => w.id === wordObj.id)) return prev;
+        return [...prev, wordObj];
+      });
       setDropzoneState('active');
     }
   };
@@ -127,7 +143,7 @@ export function SentenceBuilder({ data, onComplete }) {
           <AnimatePresence>
             {dropzone.map((wordObj) => (
               <motion.button
-                key={`dz-${wordObj.id}`}
+                key={wordObj.id}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
@@ -148,7 +164,7 @@ export function SentenceBuilder({ data, onComplete }) {
         <AnimatePresence>
           {bank.map((wordObj) => (
             <motion.button
-              key={`bank-${wordObj.id}`}
+              key={wordObj.id}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}

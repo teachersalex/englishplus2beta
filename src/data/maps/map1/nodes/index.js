@@ -1,6 +1,6 @@
 /**
- * data/nodes/index.js
- * Loader centralizado de nodes
+ * map1/nodes/index.js
+ * Exporta todos os nodes do Mapa 1: O Despertar
  */
 
 import { node1Data } from './node1';
@@ -14,7 +14,7 @@ import { node8Data } from './node8';
 import { node9Data } from './node9';
 import { node10Data } from './node10';
 
-// Objeto indexado por ID (usado no App.jsx)
+// Objeto indexado por ID
 export const nodesData = {
   1: node1Data,
   2: node2Data,
@@ -28,7 +28,7 @@ export const nodesData = {
   10: node10Data,
 };
 
-// Array ordenado (útil para iterações)
+// Array ordenado
 export const nodesArray = [
   node1Data,
   node2Data,
@@ -42,5 +42,4 @@ export const nodesArray = [
   node10Data,
 ];
 
-// Contagem total
-export const NODE_COUNT = Object.keys(nodesData).length;
+export const NODE_COUNT = 10;
