@@ -2,7 +2,12 @@
  * EpisodePlayer.jsx
  * Player de histórias com sistema de conquistas
  * 
- * FIX: Bloqueio de cliques quando modal está ativo
+ * "The details are not the details. They make the design."
+ *  — Charles Eames
+ * 
+ * FIX v2: Modal NÃO aparece automaticamente após verificar
+ *         Aluno precisa VER o feedback antes do modal
+ *         Modal só aparece quando clica "Próximo Episódio"
  */
 
 import { useState, useEffect } from 'react';
@@ -19,8 +24,6 @@ import DiamondCelebrationModal from '../lesson/DiamondCelebrationModal';
 import AchievementCelebrationModal from '../achievements/AchievementCelebrationModal';
 import { SavingOverlay } from '../feedback/SavingOverlay';
 import EpisodeCompletedModal from './EpisodeCompletedModal';
-
-const MODAL_DELAY = 500;
 
 const playPopSound = () => {
   try {
@@ -46,6 +49,9 @@ export default function EpisodePlayer({
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [episodeModalData, setEpisodeModalData] = useState(null);
   const [achievementIdToSave, setAchievementIdToSave] = useState(null);
+  
+  // ★ NOVO: Flag para saber se deve mostrar modal quando clicar em Próximo
+  const [pendingCelebration, setPendingCelebration] = useState(null); // 'diamond' | 'episode' | null
 
   const episode = series?.episodes?.[currentEpisodeIndex];
   const totalEpisodes = series?.episodes?.length || 0;
@@ -53,7 +59,7 @@ export default function EpisodePlayer({
 
   const audio = useAudioPlayer(episode?.audioUrl);
 
-  // ★ CHECA SE MODAL ESTÁ ATIVO - bloqueia interação
+  // Modal ativo = bloqueia interação
   const isModalActive = celebrationPhase !== 'dictation';
 
   useEffect(() => {
@@ -62,13 +68,20 @@ export default function EpisodePlayer({
     setCurrentAchievement(null);
     setEpisodeModalData(null);
     setAchievementIdToSave(null);
+    setPendingCelebration(null); // ★ Reset
   }, [currentEpisodeIndex, seriesId]);
 
+  /**
+   * handleCheck - Quando usuário clica "Verificar"
+   * 
+   * ★ FIX: NÃO abre modal automaticamente
+   *        Apenas salva os dados e aguarda usuário clicar "Próximo"
+   */
   const handleCheck = async (userText) => {
     if (!userText.trim() || !episode) return;
 
     const result = calculateDiff(episode.text, userText, episode.title);
-    setFeedback(result);
+    setFeedback(result); // ← Mostra o diff para o aluno VER
 
     const storyProgress = progress?.storyProgress?.[seriesId] || {};
     const previousBest = storyProgress.scores?.[episode.id] || 0;
@@ -88,6 +101,7 @@ export default function EpisodePlayer({
                             currentAverage >= 90 && 
                             !storyProgress.hasDiamond;
     
+    // Prepara dados do modal (mas NÃO abre ainda)
     setEpisodeModalData({
       score: result.score,
       episodeTitle: episode.title,
@@ -101,14 +115,11 @@ export default function EpisodePlayer({
       earnedDiamond: willEarnDiamond,
     });
 
-    setTimeout(() => {
-      if (willEarnDiamond) {
-        setCelebrationPhase('diamond');
-      } else {
-        setCelebrationPhase('episode');
-      }
-    }, MODAL_DELAY);
+    // ★ FIX: Apenas marca qual celebração mostrar DEPOIS
+    //        NÃO abre o modal agora - usuário precisa ver o feedback primeiro
+    setPendingCelebration(willEarnDiamond ? 'diamond' : 'episode');
 
+    // Salva progresso em background
     if (onUpdateProgress) {
       try {
         const updateResult = await onUpdateProgress(
@@ -147,6 +158,7 @@ export default function EpisodePlayer({
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     setAchievementIdToSave(null);
+    setPendingCelebration(null);
     
     if (!isLastEpisode) {
       setCurrentEpisodeIndex(prev => prev + 1);
@@ -155,22 +167,49 @@ export default function EpisodePlayer({
     }
   };
 
+  /**
+   * handleRetry - Usuário quer tentar novamente
+   * Limpa tudo e volta ao estado inicial
+   */
   const handleRetry = () => {
     playPopSound();
     setFeedback(null);
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     setAchievementIdToSave(null);
+    setEpisodeModalData(null);
+    setPendingCelebration(null); // ★ Limpa celebração pendente
   };
 
+  /**
+   * handleNext - Usuário clica "Próximo Episódio" no DictationArea
+   * 
+   * ★ FIX: AGORA sim abre o modal de celebração
+   *        Usuário já viu o feedback, está pronto para continuar
+   */
   const handleNext = async () => {
     playPopSound();
     
+    // ★ FIX: Agora que usuário viu o feedback, mostra a celebração
+    if (pendingCelebration === 'diamond') {
+      setCelebrationPhase('diamond');
+      setPendingCelebration(null);
+      return;
+    }
+    
+    if (pendingCelebration === 'episode') {
+      setCelebrationPhase('episode');
+      setPendingCelebration(null);
+      return;
+    }
+    
+    // Se tem achievement pendente
     if (currentAchievement && achievementIdToSave) {
       setCelebrationPhase('achievement');
       return;
     }
     
+    // Sem celebração pendente, avança direto
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     
@@ -181,6 +220,9 @@ export default function EpisodePlayer({
     }
   };
 
+  /**
+   * handleBackToSeries - Usuário quer voltar para lista de séries
+   */
   const handleBackToSeries = () => {
     playPopSound();
     
@@ -190,7 +232,62 @@ export default function EpisodePlayer({
     }
     
     setCelebrationPhase('dictation');
+    setPendingCelebration(null);
     onBack?.();
+  };
+
+  /**
+   * handleModalNext - Usuário clica "Próximo" NO MODAL
+   * Diferente do handleNext do DictationArea
+   */
+  const handleModalNext = () => {
+    playPopSound();
+    
+    // Se tem achievement pendente, mostra
+    if (currentAchievement && achievementIdToSave) {
+      setCelebrationPhase('achievement');
+      return;
+    }
+    
+    // Avança para próximo episódio
+    setCelebrationPhase('dictation');
+    setCurrentAchievement(null);
+    setPendingCelebration(null);
+    
+    if (!isLastEpisode) {
+      setCurrentEpisodeIndex(prev => prev + 1);
+    } else {
+      onBack?.();
+    }
+  };
+
+  /**
+   * handleModalBackToSeries - Usuário clica "Ver Série" no modal
+   */
+  const handleModalBackToSeries = () => {
+    playPopSound();
+    
+    if (currentAchievement && achievementIdToSave) {
+      setCelebrationPhase('achievement');
+      return;
+    }
+    
+    setCelebrationPhase('dictation');
+    setPendingCelebration(null);
+    onBack?.();
+  };
+
+  /**
+   * handleModalRetry - Usuário clica "Tentar" no modal
+   */
+  const handleModalRetry = () => {
+    playPopSound();
+    setFeedback(null);
+    setCelebrationPhase('dictation');
+    setCurrentAchievement(null);
+    setAchievementIdToSave(null);
+    setEpisodeModalData(null);
+    setPendingCelebration(null);
   };
 
   if (!series || !episode) {
@@ -349,7 +446,7 @@ export default function EpisodePlayer({
         <div className="h-20 md:h-8" />
       </main>
 
-      {/* ★★★ BLOQUEADOR DE CLIQUES - z-40 fica ABAIXO dos modals (z-50) ★★★ */}
+      {/* ★ BLOQUEADOR DE CLIQUES - z-40 fica ABAIXO dos modals (z-50) */}
       <AnimatePresence>
         {isModalActive && (
           <motion.div 
@@ -384,9 +481,9 @@ export default function EpisodePlayer({
         <EpisodeCompletedModal
           isOpen={celebrationPhase === 'episode'}
           onClose={() => setCelebrationPhase('dictation')}
-          onNextEpisode={handleNext}
-          onBackToSeries={handleBackToSeries}
-          onRetry={handleRetry}
+          onNextEpisode={handleModalNext}
+          onBackToSeries={handleModalBackToSeries}
+          onRetry={handleModalRetry}
           {...episodeModalData}
         />
       )}

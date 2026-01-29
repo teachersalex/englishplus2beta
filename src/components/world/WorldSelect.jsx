@@ -10,6 +10,7 @@
  */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
 
 // Mundos CLICÁVEIS (mapas reais) - posições em percentual
 const PLAYABLE_WORLDS = [
@@ -442,7 +443,9 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
         </svg>
       </div>
       
-      {/* Painel inferior */}
+      {/* ═══════════════════════════════════════════════════════════
+          PAINEL INFERIOR - Visual Dark Premium
+          ═══════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {selectedWorld && (
           <motion.div
@@ -450,39 +453,115 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="flex-shrink-0 p-4 border-t"
+            className="flex-shrink-0 relative overflow-hidden"
             style={{
-              backgroundColor: '#0f172a',
-              borderColor: selectedWorld.color + '40',
+              background: GRADIENTS.darkCard,
+              borderTop: `1px solid ${selectedWorld.color}30`,
             }}
           >
-            <div className="flex items-center justify-between max-w-md mx-auto gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ backgroundColor: selectedWorld.color + '20' }}
+            {/* Grid texture */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.02]"
+              style={{
+                backgroundImage: `
+                  linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: '30px 30px',
+              }}
+            />
+
+            {/* Glow do mundo selecionado */}
+            <div
+              className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-32 pointer-events-none"
+              style={{ 
+                background: `radial-gradient(ellipse, ${selectedWorld.color}25 0%, transparent 70%)`,
+              }}
+            />
+
+            {/* Accent line */}
+            <div
+              className="absolute top-0 left-0 right-0 h-0.5"
+              style={{ 
+                background: `linear-gradient(90deg, transparent 0%, ${selectedWorld.color} 50%, transparent 100%)`,
+                opacity: 0.5,
+              }}
+            />
+
+            <div className="relative z-10 p-4">
+              <div className="flex items-center justify-between max-w-md mx-auto gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Icon com glow */}
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="relative w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                    style={{ 
+                      backgroundColor: `${selectedWorld.color}20`,
+                      border: `1px solid ${selectedWorld.color}40`,
+                      boxShadow: `0 0 20px ${selectedWorld.color}30`,
+                    }}
+                  >
+                    {selectedWorld.icon}
+                  </motion.div>
+
+                  <div className="min-w-0">
+                    <motion.h2 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="font-bold truncate"
+                      style={{ color: COLORS.textLight }}
+                    >
+                      {selectedWorld.name}
+                    </motion.h2>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.05 }}
+                      className="text-sm truncate"
+                      style={{ color: COLORS.textDark }}
+                    >
+                      {selectedWorld.subtitle}
+                    </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="flex items-center gap-2 mt-1"
+                    >
+                      <span 
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ 
+                          backgroundColor: `${selectedWorld.color}20`,
+                          color: selectedWorld.color,
+                        }}
+                      >
+                        {selectedWorld.nodes} nodes
+                      </span>
+                    </motion.div>
+                  </div>
+                </div>
+                
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="px-6 py-3 rounded-xl font-bold text-white flex-shrink-0 transition-all"
+                  style={{
+                    background: `linear-gradient(135deg, ${selectedWorld.color}, ${selectedWorld.color}CC)`,
+                    boxShadow: `0 8px 24px -4px ${selectedWorld.color}50`,
+                  }}
+                  onClick={handleExplore}
                 >
-                  {selectedWorld.icon}
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-white font-bold truncate">{selectedWorld.name}</h2>
-                  <p className="text-white/50 text-sm truncate">{selectedWorld.subtitle} • {selectedWorld.nodes} nodes</p>
-                </div>
+                  Explorar →
+                </motion.button>
               </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="px-5 py-2.5 rounded-xl font-bold text-white flex-shrink-0"
-                style={{
-                  background: `linear-gradient(135deg, ${selectedWorld.color}, ${selectedWorld.color}CC)`,
-                  boxShadow: `0 4px 14px ${selectedWorld.color}40`,
-                }}
-                onClick={handleExplore}
-              >
-                Explorar →
-              </motion.button>
             </div>
+
+            {/* Safe area bottom */}
+            <div className="h-safe-bottom" style={{ background: COLORS.dark?.bg || '#0f172a' }} />
           </motion.div>
         )}
       </AnimatePresence>

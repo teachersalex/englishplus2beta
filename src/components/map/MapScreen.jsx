@@ -6,7 +6,7 @@
  */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { COLORS, SHADOWS } from '../../tokens';
+import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
 import { getMapData } from '../../data/maps/mapsConfig';
 
 import { DecoElements } from './DecoElements';
@@ -78,16 +78,12 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
   useEffect(() => {
     if (!scrollRef.current || hasScrolled) return;
     
-    const container = scrollRef.current;
-    
-    // Pequeno delay pra garantir que os nodes renderizaram
     const scrollTimer = setTimeout(() => {
       if (activeNodeRef.current && scrollRef.current) {
         const containerRect = scrollRef.current.getBoundingClientRect();
         const nodeRect = activeNodeRef.current.getBoundingClientRect();
         const containerScrollTop = scrollRef.current.scrollTop;
         
-        // Centraliza o node na tela
         const targetY = containerScrollTop + nodeRect.top - containerRect.top - (containerRect.height / 2) + (nodeRect.height / 2);
         
         smoothScrollTo(scrollRef.current, targetY, 800);
@@ -229,50 +225,133 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
         </div>
       </div>
 
-      {/* Modal Reset */}
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL RESET - Visual Dark Premium
+          ═══════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {showResetConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={() => setShowResetConfirm(false)}
           >
+            {/* Backdrop com blur */}
+            <div 
+              className="absolute inset-0"
+              style={{ 
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                backdropFilter: 'blur(8px)',
+              }}
+            />
+
+            {/* Glow vermelho sutil */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{ 
+                background: 'radial-gradient(ellipse 50% 40% at 50% 30%, rgba(239, 68, 68, 0.15), transparent 60%)',
+              }}
+            />
+
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-3xl p-6 max-w-sm w-full relative overflow-hidden"
-              style={{ backgroundColor: COLORS.surface, boxShadow: SHADOWS.cardDark }}
+              className="relative rounded-3xl p-6 max-w-sm w-full overflow-hidden"
+              style={{ 
+                background: GRADIENTS.darkCard,
+                boxShadow: SHADOWS.cardDark,
+              }}
             >
+              {/* Grid texture */}
               <div
-                className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 60%)' }}
+                className="absolute inset-0 pointer-events-none opacity-[0.03]"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(rgba(239, 68, 68, 0.2) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(239, 68, 68, 0.2) 1px, transparent 1px)
+                  `,
+                  backgroundSize: '32px 32px',
+                }}
+              />
+
+              {/* Accent line vermelha */}
+              <div
+                className="absolute left-0 top-6 bottom-6 w-1 rounded-full pointer-events-none"
+                style={{ 
+                  background: 'linear-gradient(to bottom, #ef4444, #dc2626)',
+                  opacity: 0.6,
+                }}
+              />
+
+              {/* Top glow */}
+              <div
+                className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 pointer-events-none"
+                style={{ 
+                  background: 'radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, transparent 60%)',
+                }}
               />
 
               <div className="relative z-10 text-center">
-                <div 
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: COLORS.warningLight }}
+                {/* Icon */}
+                <motion.div 
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1))',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                  }}
                 >
-                  <span className="text-3xl">⚠️</span>
-                </div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: COLORS.text }}>
+                  <span className="text-4xl">⚠️</span>
+                </motion.div>
+
+                <motion.h3 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-xl font-bold mb-2" 
+                  style={{ color: COLORS.textLight }}
+                >
                   Resetar Progresso?
-                </h3>
-                <p className="text-sm mb-6" style={{ color: COLORS.textMuted }}>
-                  Todo seu progresso será apagado. Esta ação não pode ser desfeita.
-                </p>
-                <div className="flex gap-3">
-                  <button
+                </motion.h3>
+
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-sm mb-6" 
+                  style={{ color: COLORS.textDark }}
+                >
+                  Todo seu progresso será apagado.
+                  <br />
+                  <span style={{ color: COLORS.error }}>Esta ação não pode ser desfeita.</span>
+                </motion.p>
+
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="flex gap-3"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setShowResetConfirm(false)}
-                    className="flex-1 py-3 rounded-xl font-medium transition-colors"
-                    style={{ backgroundColor: COLORS.border, color: COLORS.text }}
+                    className="flex-1 py-3.5 rounded-xl font-semibold transition-all"
+                    style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      color: COLORS.textLight,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
                   >
                     Cancelar
-                  </button>
+                  </motion.button>
+
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -280,15 +359,15 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
                       onReset?.();
                       setShowResetConfirm(false);
                     }}
-                    className="flex-1 py-3 rounded-xl font-medium text-white"
+                    className="flex-1 py-3.5 rounded-xl font-bold text-white transition-all"
                     style={{ 
                       background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                      boxShadow: '0 8px 20px -4px rgba(239, 68, 68, 0.4)',
+                      boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.5)',
                     }}
                   >
                     Resetar
                   </motion.button>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
