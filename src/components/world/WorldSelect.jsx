@@ -276,7 +276,7 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
     audio.volume = 0;
     audioRef.current = audio;
     
-    const targetVolume = 0.25;
+    const targetVolume = 0.09;
     
     const playPromise = audio.play();
     if (playPromise !== undefined) {
@@ -312,7 +312,7 @@ export default function WorldSelect({ onSelectWorld, onBack }) {
       const audio = audioRef.current;
       let vol = audio.volume;
       const fadeOut = setInterval(() => {
-        vol -= 0.05;
+        vol -= 0.01;
         if (vol <= 0) {
           audio.pause();
           clearInterval(fadeOut);

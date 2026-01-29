@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { COLORS, GRADIENTS } from '../../tokens';
+import { COLORS } from '../../tokens';
 import { getAchievementIcon } from '../../data/achievementsData';
 
 // Cores por categoria - tons mais vibrantes
@@ -80,8 +80,8 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
   const orbitParticles = useMemo(() =>
     Array.from({ length: 12 }, (_, i) => ({
       id: i,
-      angle: (i * 30),
-      radius: 80,
+      angle: i * 30,
+      radius: 95,
       size: 4,
       duration: 3 + Math.random(),
     })),
@@ -97,7 +97,7 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
     // Som
     try {
       audioRef.current = new Audio('/audio/achievement_unlock.mp3');
-      audioRef.current.volume = 0.7;
+      audioRef.current.volume = 0.3;
       audioRef.current.play().catch(() => {});
     } catch (e) {}
 
@@ -252,30 +252,34 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
               />
             </div>
 
-            {/* Orbiting particles */}
+            {/* Orbiting particles - CORRIGIDO */}
             {phase >= 3 && orbitParticles.map((p) => (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: [0, 1, 0],
-                  rotate: [p.angle, p.angle + 360],
-                }}
+                className="absolute inset-0"
+                initial={{ rotate: p.angle }}
+                animate={{ rotate: p.angle + 360 }}
                 transition={{
                   duration: p.duration,
                   repeat: Infinity,
                   ease: 'linear',
                 }}
-                className="absolute top-1/2 left-1/2 -ml-0.5 -mt-0.5"
-                style={{
-                  width: p.size,
-                  height: p.size,
-                  transformOrigin: `${p.radius}px 0`,
-                }}
               >
-                <div
-                  className="w-full h-full rounded-full"
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0.2, 1, 0.2] }}
+                  transition={{
+                    duration: p.duration / 2,
+                    repeat: Infinity,
+                  }}
+                  className="absolute rounded-full"
                   style={{
+                    width: p.size,
+                    height: p.size,
+                    top: '50%',
+                    left: '50%',
+                    marginTop: -p.size / 2,
+                    marginLeft: p.radius - p.size / 2,
                     backgroundColor: theme.color,
                     boxShadow: `0 0 8px ${theme.color}`,
                   }}
@@ -283,12 +287,16 @@ export function AchievementCelebrationModal({ isOpen, onComplete, achievement })
               </motion.div>
             ))}
 
-            {/* Rotating dashed ring */}
+            {/* Rotating dashed ring - CORRIGIDO */}
             <motion.div
               animate={phase >= 3 ? { rotate: 360 } : {}}
               transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-[-14px] rounded-full pointer-events-none"
+              className="absolute rounded-full pointer-events-none"
               style={{
+                top: -14,
+                left: -14,
+                right: -14,
+                bottom: -14,
                 border: `2px dashed ${theme.color}30`,
               }}
             />

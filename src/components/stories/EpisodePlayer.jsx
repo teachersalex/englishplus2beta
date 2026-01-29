@@ -2,12 +2,9 @@
  * EpisodePlayer.jsx
  * Player de histórias com sistema de conquistas
  * 
- * "The details are not the details. They make the design."
- *  — Charles Eames
- * 
- * FIX v2: Modal NÃO aparece automaticamente após verificar
- *         Aluno precisa VER o feedback antes do modal
- *         Modal só aparece quando clica "Próximo Episódio"
+ * FIX: Modal NÃO aparece automaticamente após verificar
+ *      Aluno precisa VER o feedback antes do modal
+ *      Modal só aparece quando clica "Próximo Episódio"
  */
 
 import { useState, useEffect } from 'react';
@@ -28,7 +25,7 @@ import EpisodeCompletedModal from './EpisodeCompletedModal';
 const playPopSound = () => {
   try {
     const popAudio = new Audio('/audio/pop_sfx.mp3');
-    popAudio.volume = 0.6;
+    popAudio.volume = 0.5;
     popAudio.play().catch(() => {});
   } catch (e) {}
 };
@@ -50,8 +47,8 @@ export default function EpisodePlayer({
   const [episodeModalData, setEpisodeModalData] = useState(null);
   const [achievementIdToSave, setAchievementIdToSave] = useState(null);
   
-  // ★ NOVO: Flag para saber se deve mostrar modal quando clicar em Próximo
-  const [pendingCelebration, setPendingCelebration] = useState(null); // 'diamond' | 'episode' | null
+  // ★ FIX: Flag para saber qual celebração mostrar quando clicar em Próximo
+  const [pendingCelebration, setPendingCelebration] = useState(null);
 
   const episode = series?.episodes?.[currentEpisodeIndex];
   const totalEpisodes = series?.episodes?.length || 0;
@@ -59,7 +56,6 @@ export default function EpisodePlayer({
 
   const audio = useAudioPlayer(episode?.audioUrl);
 
-  // Modal ativo = bloqueia interação
   const isModalActive = celebrationPhase !== 'dictation';
 
   useEffect(() => {
@@ -68,7 +64,7 @@ export default function EpisodePlayer({
     setCurrentAchievement(null);
     setEpisodeModalData(null);
     setAchievementIdToSave(null);
-    setPendingCelebration(null); // ★ Reset
+    setPendingCelebration(null);
   }, [currentEpisodeIndex, seriesId]);
 
   /**
@@ -167,10 +163,6 @@ export default function EpisodePlayer({
     }
   };
 
-  /**
-   * handleRetry - Usuário quer tentar novamente
-   * Limpa tudo e volta ao estado inicial
-   */
   const handleRetry = () => {
     playPopSound();
     setFeedback(null);
@@ -178,7 +170,7 @@ export default function EpisodePlayer({
     setCurrentAchievement(null);
     setAchievementIdToSave(null);
     setEpisodeModalData(null);
-    setPendingCelebration(null); // ★ Limpa celebração pendente
+    setPendingCelebration(null);
   };
 
   /**
@@ -220,9 +212,6 @@ export default function EpisodePlayer({
     }
   };
 
-  /**
-   * handleBackToSeries - Usuário quer voltar para lista de séries
-   */
   const handleBackToSeries = () => {
     playPopSound();
     
@@ -236,20 +225,15 @@ export default function EpisodePlayer({
     onBack?.();
   };
 
-  /**
-   * handleModalNext - Usuário clica "Próximo" NO MODAL
-   * Diferente do handleNext do DictationArea
-   */
+  // Handlers do modal (separados do DictationArea)
   const handleModalNext = () => {
     playPopSound();
     
-    // Se tem achievement pendente, mostra
     if (currentAchievement && achievementIdToSave) {
       setCelebrationPhase('achievement');
       return;
     }
     
-    // Avança para próximo episódio
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     setPendingCelebration(null);
@@ -261,9 +245,6 @@ export default function EpisodePlayer({
     }
   };
 
-  /**
-   * handleModalBackToSeries - Usuário clica "Ver Série" no modal
-   */
   const handleModalBackToSeries = () => {
     playPopSound();
     
@@ -277,9 +258,6 @@ export default function EpisodePlayer({
     onBack?.();
   };
 
-  /**
-   * handleModalRetry - Usuário clica "Tentar" no modal
-   */
   const handleModalRetry = () => {
     playPopSound();
     setFeedback(null);
