@@ -4,27 +4,23 @@
  * 
  * "Medir é saber." — Lord Kelvin
  * 
- * ARQUITETURA DE CONQUISTAS:
- * - earnedAchievements: JÁ CELEBRADAS (badge acende na Home)
- * - pendingAchievements: NA FILA (aguardando modal)
+ * ARQUITETURA DE CONQUISTAS (v2 - Anti-Colisão):
+ * - Detecção de conquistas agora é feita pelo LessonRunner
+ * - useProgress só persiste: earnedAchievements, pendingAchievements
+ * - celebrateAchievement recebe objeto com todos os IDs
  * 
  * CHAVES DE PROGRESSO:
  * - Formato: map{mapId}:node{nodeId}-{levelId}
- * - Exemplo: map0:node1-beginner, map1:node3-intermediate
+ * - Exemplo: map0:node1-0_1_bronze
  * 
  * LEVEL:
  * - Sempre derivado de XP: Math.floor(xp / 500) + 1
  * - Não é persistido separadamente
- * 
- * IDEMPOTÊNCIA:
- * - completeLevel usa transaction para evitar double reward
- * - Se level já foi completado, não dá XP/diamante novamente
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc, increment, arrayUnion, arrayRemove, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, increment, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
-import { checkNewAchievements } from '../data/achievementsData';
 
 const INITIAL_PROGRESS = {
   xp: 0,
@@ -80,42 +76,60 @@ export function useProgress(user) {
     return unsubscribe;
   }, [userId, user?.email, user?.displayName]);
 
-  // === ACHIEVEMENTS ===
+  // === ACHIEVEMENTS (v2 - Simplificado) ===
 
-  const detectAndQueueAchievements = useCallback(async (updatedProgress) => {
-    if (!userId) return [];
+  /**
+   * Celebra uma conquista e atualiza as listas
+   * Chamado pelo LessonRunner após mostrar o modal
+   * 
+   * @param {object} data
+   * @param {string} data.celebratedId - ID da conquista celebrada
+   * @param {string[]} data.newEarnedIds - Todos os IDs que agora são "earned"
+   * @param {string[]} data.newPendingIds - IDs que ficaram na fila
+   */
+  const celebrateAchievement = useCallback(async (data) => {
+    if (!userId) return;
     
-    const earned = updatedProgress.earnedAchievements || progress.earnedAchievements || [];
-    const pending = updatedProgress.pendingAchievements || progress.pendingAchievements || [];
+    // Suporte ao formato antigo (só string) para compatibilidade
+    if (typeof data === 'string') {
+      const achievementId = data;
+      const docRef = doc(db, 'users', userId);
+      
+      // Formato antigo: move de pending para earned
+      const currentEarned = progress.earnedAchievements || [];
+      const currentPending = progress.pendingAchievements || [];
+      
+      await updateDoc(docRef, {
+        earnedAchievements: [...currentEarned.filter(id => id !== achievementId), achievementId],
+        pendingAchievements: currentPending.filter(id => id !== achievementId),
+      });
+      return;
+    }
     
-    // Adiciona level derivado para checagem de achievements
-    const progressWithLevel = {
-      ...updatedProgress,
-      level: calculateLevel(updatedProgress.xp),
-    };
+    // Formato novo: objeto com todas as listas
+    const { celebratedId, newEarnedIds, newPendingIds } = data;
     
-    const newlyUnlocked = checkNewAchievements(progressWithLevel, earned, pending);
-    
-    if (newlyUnlocked.length === 0) return [];
+    if (!celebratedId) return;
     
     const docRef = doc(db, 'users', userId);
+    
     await updateDoc(docRef, {
-      pendingAchievements: arrayUnion(...newlyUnlocked),
+      earnedAchievements: newEarnedIds,
+      pendingAchievements: newPendingIds,
     });
     
-    return newlyUnlocked;
+    // Atualiza estado local imediatamente
+    setProgress(prev => ({
+      ...prev,
+      earnedAchievements: newEarnedIds,
+      pendingAchievements: newPendingIds,
+    }));
+    
   }, [userId, progress.earnedAchievements, progress.pendingAchievements]);
 
-  const celebrateAchievement = useCallback(async (achievementId) => {
-    if (!userId || !achievementId) return;
-    
-    const docRef = doc(db, 'users', userId);
-    await updateDoc(docRef, {
-      pendingAchievements: arrayRemove(achievementId),
-      earnedAchievements: arrayUnion(achievementId),
-    });
-  }, [userId]);
-
+  /**
+   * Retorna próxima conquista pendente (para mostrar ao entrar em lição)
+   */
   const getNextPendingAchievement = useCallback(() => {
     const pending = progress.pendingAchievements || [];
     if (pending.length === 0) return null;
@@ -126,8 +140,6 @@ export function useProgress(user) {
   
   /**
    * Retorna estado do node para um mapa específico
-   * @param {number} mapId - ID do mapa (0, 1, 2...)
-   * @param {number} nodeId - ID do node (1, 2, 3...)
    */
   const getNodeState = useCallback((mapId, nodeId) => {
     const prefix = `map${mapId}:node${nodeId}-`;
@@ -172,11 +184,13 @@ export function useProgress(user) {
   }, [isLevelCompleted]);
 
   /**
-   * Completa um level e detecta conquistas
+   * Completa um level
    * IDEMPOTENTE: usa transaction para evitar double reward
+   * 
+   * NOTA: Não detecta mais conquistas aqui. O LessonRunner faz isso.
    */
   const completeLevel = useCallback(async (mapId, nodeId, levelId, result) => {
-    if (!userId) return { newlyUnlocked: [], isFirstCompletion: false };
+    if (!userId) return { isFirstCompletion: false, progress: {} };
     
     const key = `map${mapId}:node${nodeId}-${levelId}`;
     const xpGained = result.xpEarned || 0;
@@ -198,8 +212,7 @@ export function useProgress(user) {
       if (alreadyCompleted) {
         return {
           isFirstCompletion: false,
-          newXP: currentData.xp,
-          newDiamonds: currentData.diamonds,
+          updatedData: currentData,
         };
       }
       
@@ -207,12 +220,17 @@ export function useProgress(user) {
       const newXP = (currentData.xp || 0) + xpGained;
       const newDiamonds = (currentData.diamonds || 0) + (earnedDiamond ? 1 : 0);
       
-      const updates = {
-        [`completedLevels.${key}`]: {
+      const newCompletedLevels = {
+        ...currentData.completedLevels,
+        [key]: {
           accuracy: result.accuracy,
           xp: xpGained,
           completedAt: new Date().toISOString(),
         },
+      };
+      
+      const updates = {
+        [`completedLevels.${key}`]: newCompletedLevels[key],
         xp: newXP,
         diamonds: newDiamonds,
         lastActivity: new Date().toISOString(),
@@ -222,45 +240,38 @@ export function useProgress(user) {
       
       return {
         isFirstCompletion: true,
-        newXP,
-        newDiamonds,
+        updatedData: {
+          ...currentData,
+          xp: newXP,
+          diamonds: newDiamonds,
+          completedLevels: newCompletedLevels,
+        },
       };
     });
 
-    const { isFirstCompletion, newXP, newDiamonds } = transactionResult;
-    const newLevel = calculateLevel(newXP);
+    const { isFirstCompletion, updatedData } = transactionResult;
+    
+    // Calcula level
+    const newLevel = calculateLevel(updatedData.xp);
     const oldLevel = calculateLevel(progress.xp);
     const leveledUp = newLevel > oldLevel;
 
-    // Prepara progress atualizado para detecção de achievements
-    const updatedProgress = {
-      ...progress,
-      xp: newXP,
-      diamonds: newDiamonds,
-      completedLevels: {
-        ...progress.completedLevels,
-        [key]: { accuracy: result.accuracy, xp: xpGained },
+    // Retorna progress atualizado para o LessonRunner usar na detecção de conquistas
+    return { 
+      isFirstCompletion,
+      leveledUp,
+      newLevel,
+      progress: {
+        ...updatedData,
+        level: newLevel,
       },
     };
-
-    // Detecta achievements apenas se foi primeira completação
-    let newlyUnlocked = [];
-    if (isFirstCompletion) {
-      newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
-    }
-
-    return { 
-      newlyUnlocked, 
-      newLevel, 
-      leveledUp,
-      isFirstCompletion,
-    };
-  }, [userId, progress, detectAndQueueAchievements]);
+  }, [userId, progress.xp]);
 
   // === STORY PROGRESS ===
 
   const updateStoryProgress = useCallback(async (seriesId, episodeId, score, totalEpisodes) => {
-    if (!userId) return { average: 0, hasDiamond: false, newDiamond: false, newlyUnlocked: [] };
+    if (!userId) return { average: 0, hasDiamond: false, newDiamond: false };
     
     const currentStory = progress.storyProgress[seriesId] || { scores: {} };
     const newScores = { 
@@ -291,24 +302,21 @@ export function useProgress(user) {
 
     await updateDoc(docRef, updates);
 
-    const updatedProgress = {
-      ...progress,
-      storyProgress: {
-        ...progress.storyProgress,
-        [seriesId]: { scores: newScores, average, hasDiamond },
-      },
-      diamonds: (progress.diamonds || 0) + (isNewDiamond ? 1 : 0),
-    };
-
-    const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
-
     return { 
       average, 
       hasDiamond, 
       newDiamond: isNewDiamond,
-      newlyUnlocked,
+      // Progress atualizado para detecção de conquistas
+      progress: {
+        ...progress,
+        storyProgress: {
+          ...progress.storyProgress,
+          [seriesId]: { scores: newScores, average, hasDiamond },
+        },
+        diamonds: (progress.diamonds || 0) + (isNewDiamond ? 1 : 0),
+      },
     };
-  }, [userId, progress, detectAndQueueAchievements]);
+  }, [userId, progress]);
 
   // === UTILITIES ===
 
@@ -346,8 +354,7 @@ export function useProgress(user) {
     // Story
     updateStoryProgress,
     
-    // Achievements
-    detectAndQueueAchievements,
+    // Achievements (simplificado)
     celebrateAchievement,
     getNextPendingAchievement,
     

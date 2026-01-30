@@ -1,653 +1,771 @@
 /**
  * achievementsData.js
- * Sistema de Conquistas 2.0 - ESCALONAMENTO DE DOPAMINA
+ * Sistema de Conquistas Escalável - EnglishPlus 2.0
  * 
- * "The reward for work well done is the opportunity to do more."
- *  — Jonas Salk
+ * "A dopamina não mente. O design sim."
+ *  — Alex Santos
  * 
- * FILOSOFIA:
- * - M0: FESTA DE DOPAMINA (iniciante precisa de reforço constante)
- * - M1: Menos frequente, mais significativo
- * - M2+: Raro, só milestones
- * - Global: XP, diamantes, histórias (aparecem progressivamente)
- * 
- * COMPATIBILIDADE:
- * - IDs mantidos iguais ao sistema anterior (lesson1, node1, perfect5, etc)
- * - Helpers ajustados para formato real: map0:node1-0_1_bronze
+ * ARQUITETURA:
+ * - Milestones escaláveis (não hardcoded por mapa)
+ * - Visibilidade dinâmica (só mostra próximas)
+ * - Anti-colisão por prioridade (nunca 2 ao mesmo tempo)
+ * - Números de perfeitas que NUNCA são múltiplos de 3
  */
 
-// === HELPERS ===
+// ============================================
+// MILESTONES ESCALÁVEIS
+// ============================================
 
 /**
- * Conta nodes completos em um mapa específico
- * Formato das chaves: map{mapId}:node{nodeId}-{levelId}
- * Exemplo: map0:node1-0_1_bronze, map0:node1-0_1_silver, map0:node1-0_1_gold
+ * Números seguros para conquistas de perfeitas
+ * NUNCA múltiplos de 3 (evita colisão com nodes)
+ * Espaçamento crescente (dopamina escassa)
  */
-const countMapNodes = (p, mapId) => {
-  const prefix = `map${mapId}:node`;
-  const nodes = {};
+export const PERFECT_MILESTONES = [1, 4, 8, 14, 22, 32, 44, 58, 74, 92, 112, 134, 160, 190, 224];
+
+/**
+ * Milestones de lições - progressão natural
+ */
+export const LESSON_MILESTONES = [1, 5, 12, 20, 35, 50, 75, 100, 150, 200, 300, 500];
+
+/**
+ * Milestones de XP
+ */
+export const XP_MILESTONES = [500, 1500, 3000, 5000, 8000, 12000, 18000, 25000, 35000, 50000];
+
+/**
+ * Milestones de diamantes
+ */
+export const DIAMOND_MILESTONES = [1, 3, 7, 12, 20, 30, 45, 65, 90, 120];
+
+/**
+ * Milestones de streak (dias seguidos)
+ */
+export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 200, 365];
+
+/**
+ * Milestones de histórias completas
+ */
+export const STORY_MILESTONES = [1, 3, 5, 10, 15, 25, 40];
+
+
+// ============================================
+// SISTEMA DE PRIORIDADE (Anti-Colisão)
+// ============================================
+
+/**
+ * Quanto MENOR o número, MAIOR a prioridade
+ * Se 2+ conquistas desbloqueiam juntas, a de menor número aparece primeiro
+ */
+export const PRIORITY = {
+  secret: 1,       // Easter eggs - sempre surpresa
+  boss: 2,         // Boss derrotado - momento épico
+  map: 3,          // Mapa completo - milestone major
+  node: 4,         // Node milestone (5, 10, 15...)
+  skill: 5,        // Perfeitas, diamantes
+  story: 6,        // Histórias
+  lesson: 7,       // Lições completadas
+  xp: 8,           // XP acumulado
+  habit: 9,        // Streaks
+};
+
+
+// ============================================
+// CATEGORIAS (para agrupar na Home)
+// ============================================
+
+export const CATEGORIES = {
+  milestone: { name: 'Jornada', color: '#3B82F6', icon: 'flag' },
+  skill: { name: 'Habilidade', color: '#10B981', icon: 'target' },
+  grind: { name: 'Dedicação', color: '#F59E0B', icon: 'fire' },
+  story: { name: 'Histórias', color: '#8B5CF6', icon: 'book' },
+  secret: { name: 'Secreto', color: '#EC4899', icon: 'sparkle' },
+};
+
+
+// ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Conta nodes completos (todos os 3 levels)
+ */
+const countCompletedNodes = (progress) => {
+  if (!progress?.completedLevels) return 0;
   
-  Object.keys(p.completedLevels || {}).forEach(key => {
-    if (key.startsWith(prefix)) {
-      // Extrai nodeId: "map0:node1-0_1_bronze" → "node1"
-      const match = key.match(/node(\d+)/);
-      if (match) {
-        const nodeKey = `node${match[1]}`;
-        nodes[nodeKey] = (nodes[nodeKey] || 0) + 1;
+  const nodeSet = new Set();
+  Object.keys(progress.completedLevels).forEach(levelId => {
+    // levelId formato: "map0:node1-0_1_bronze"
+    const match = levelId.match(/node(\d+)/);
+    if (match) {
+      const nodeNum = parseInt(match[1]);
+      const mapMatch = levelId.match(/map(\d+)/);
+      const mapNum = mapMatch ? parseInt(mapMatch[1]) : 0;
+      
+      // Checa se tem os 3 levels do node
+      const bronzeKey = `map${mapNum}:node${nodeNum}-${mapNum}_${nodeNum}_bronze`;
+      const silverKey = `map${mapNum}:node${nodeNum}-${mapNum}_${nodeNum}_silver`;
+      const goldKey = `map${mapNum}:node${nodeNum}-${mapNum}_${nodeNum}_gold`;
+      
+      if (progress.completedLevels[bronzeKey] && 
+          progress.completedLevels[silverKey] && 
+          progress.completedLevels[goldKey]) {
+        nodeSet.add(`${mapNum}-${nodeNum}`);
       }
     }
   });
   
-  // Node completo = 3 levels (bronze, silver, gold)
-  return Object.values(nodes).filter(count => count >= 3).length;
+  return nodeSet.size;
 };
 
 /**
- * Conta TODOS os nodes completos (todos os mapas)
+ * Conta lições completadas (cada level = 1 lição)
  */
-const countAllNodes = (p) => {
-  const nodes = {};
-  
-  Object.keys(p.completedLevels || {}).forEach(key => {
-    // Extrai "map0:node1" de "map0:node1-0_1_bronze"
-    const match = key.match(/(map\d+:node\d+)/);
-    if (match) {
-      nodes[match[1]] = (nodes[match[1]] || 0) + 1;
-    }
-  });
-  
-  return Object.values(nodes).filter(count => count >= 3).length;
+const countCompletedLessons = (progress) => {
+  if (!progress?.completedLevels) return 0;
+  return Object.keys(progress.completedLevels).length;
 };
 
 /**
- * Conta levels completos (não nodes, levels individuais)
+ * Conta perfeitas (levels com 95%+)
  */
-const countCompletedLevels = (p) => Object.keys(p.completedLevels || {}).length;
-
-/**
- * Conta levels perfeitos (95%+) em um mapa específico
- */
-const countMapPerfects = (p, mapId) => {
-  const prefix = `map${mapId}:`;
-  return Object.entries(p.completedLevels || {})
-    .filter(([key, val]) => key.startsWith(prefix) && val.accuracy >= 95)
+const countPerfects = (progress) => {
+  if (!progress?.completedLevels) return 0;
+  
+  return Object.values(progress.completedLevels)
+    .filter(level => (level.accuracy || 0) >= 95)
     .length;
 };
 
 /**
- * Conta TODOS os levels perfeitos
+ * Conta diamantes
  */
-const countAllPerfects = (p) => {
-  return Object.values(p.completedLevels || {})
-    .filter(l => l.accuracy >= 95).length;
-};
+const getDiamonds = (progress) => progress?.diamonds || 0;
 
 /**
- * Conta mapas 100% completos (10 nodes cada)
+ * Pega streak atual
  */
-const countCompletedMaps = (p) => {
+const getStreak = (progress) => progress?.streak || 0;
+
+/**
+ * Pega XP total
+ */
+const getXP = (progress) => progress?.xp || 0;
+
+/**
+ * Conta histórias COMPLETAS (todas com hasDiamond verificado)
+ * Uma história só conta como completa quando todos episódios foram feitos
+ */
+const countCompletedStories = (progress) => {
+  if (!progress?.storyProgress) return 0;
+  
   let count = 0;
-  for (let mapId = 0; mapId < 20; mapId++) {
-    if (countMapNodes(p, mapId) >= 10) count++;
-  }
+  Object.values(progress.storyProgress).forEach(story => {
+    // hasDiamond só é true quando TODOS os episódios foram completos E média ≥90%
+    // Mas para contar como "história completa", basta ter todos os episódios
+    // Verificamos se tem pelo menos 4 scores (padrão de episódios por série)
+    const episodeCount = Object.keys(story.scores || {}).length;
+    const expectedEpisodes = 4; // Todas as séries têm 4 episódios
+    
+    if (episodeCount >= expectedEpisodes) {
+      count++;
+    }
+  });
+  
   return count;
 };
 
 /**
- * Histórias completas
+ * Checa se é primeiro de algo
  */
-const countCompletedStories = (p) => {
-  return Object.values(p.storyProgress || {}).filter(s => {
-    const episodeCount = Object.keys(s.scores || {}).length;
-    return episodeCount >= 3;
-  }).length;
-};
+const isFirst = (getValue, progress) => getValue(progress) >= 1;
 
-// Getters simples
-const getDiamonds = (p) => p.diamonds || 0;
-const getXP = (p) => p.xp || 0;
-const getLevel = (p) => p.level || 1;
-const getStreak = (p) => p.streak || 0;
 
-// === MAPEAMENTO DE ÍCONES (mantido original) ===
-export const ACHIEVEMENT_ICONS = {
-  // Lições
-  lesson1: 'shield',
-  lesson6: 'book',
-  lesson18: 'scroll',
-  lesson30: 'encyclopedia',
-  
-  // Nodes do mapa
-  node1: 'castle',
-  node3: 'map',
-  node5: 'globe',
-  node7: 'mountain',
-  node10: 'star',
-  allnodes: 'monument',
-  
-  // Perfeitos
-  perfect3: 'target',
-  perfect5: 'target',
-  perfect10: 'medal',
-  perfect20: 'masks',
-  
-  // Diamantes
-  diamond10: 'diamond',
-  diamond20: 'crown',
-  diamond50: 'diamond',
-  
-  // Histórias
-  story1: 'headphones',
-  story3: 'radio',
-  story5: 'music',
-  story10: 'conductor',
-  story20: 'clapperboard',
-  
-  // XP
-  xp500: 'sparkle',
-  xp1000: 'comet',
-  xp2500: 'bolt',
-  xp5000: 'fire',
-  xp10000: 'supernova',
-  
-  // Níveis
-  level5: 'rocket',
-  level10: 'ufo',
-  level15: 'moon',
-  level20: 'sun',
-  
-  // Mapas
-  maps3: 'compass',
-  maps5: 'globe',
-  
-  // Especial
-  master: 'trophy',
-};
+// ============================================
+// CORE ACHIEVEMENTS (20 essenciais)
+// ============================================
 
-export const getAchievementIcon = (id) => {
-  const iconName = ACHIEVEMENT_ICONS[id] || 'star';
-  return `/achievements/${iconName}.png`;
-};
-
-// === CONQUISTAS POR MAPA ===
-// mapId: null = global (aparece em qualquer mapa)
-// mapId: 0 = só aparece quando jogador está no mapa 0
-// mapId: [0,1] = aparece nos mapas 0 e 1
-
-// Mapa 0: FESTA DE DOPAMINA (Tutorial) - ~8 conquistas
-const MAP_0_ACHIEVEMENTS = [
+const CORE_ACHIEVEMENTS = [
+  // ========== MILESTONE: PRIMEIROS PASSOS ==========
   {
-    id: 'lesson1',
-    mapId: 0,
+    id: 'first_lesson',
     title: 'Primeiro Passo',
     desc: 'Complete sua primeira lição',
-    quote: 'O primeiro passo foi dado. A jornada começou.',
+    quote: 'Toda jornada começa com um único passo.',
+    category: 'milestone',
+    priority: PRIORITY.lesson,
     target: 1,
-    getValue: countCompletedLevels,
+    getValue: countCompletedLessons,
+    visibility: 'always', // Sempre visível no início
   },
   {
-    id: 'node1',
-    mapId: 0,
-    title: 'Conquistador',
-    desc: 'Complete o primeiro node',
-    quote: 'Você conquistou seu primeiro território.',
+    id: 'first_node',
+    title: 'Território Conquistado',
+    desc: 'Complete seu primeiro node (3 níveis)',
+    quote: 'O primeiro de muitos.',
+    category: 'milestone',
+    priority: PRIORITY.node,
     target: 1,
-    getValue: countAllNodes,
+    getValue: countCompletedNodes,
+    visibility: 'always',
   },
   {
-    id: 'lesson6',
-    mapId: 0,
-    title: 'Estudante',
-    desc: 'Complete 6 lições',
-    quote: 'Seis lições. O hábito está se formando.',
-    target: 6,
-    getValue: countCompletedLevels,
-  },
-  {
-    id: 'node3',
-    mapId: 0,
-    title: 'Explorador',
-    desc: 'Complete 3 nodes',
-    quote: 'O mapa começa a revelar seus segredos.',
-    target: 3,
-    getValue: countAllNodes,
-  },
-  {
-    id: 'perfect5',
-    mapId: 0,
+    id: 'first_perfect',
     title: 'Atirador',
-    desc: '5 lições com 95%+',
-    quote: 'Precisão é poder. Cinco tiros certeiros.',
-    target: 5,
-    getValue: countAllPerfects,
+    desc: 'Complete uma lição com 95%+ de precisão',
+    quote: 'Precisão é poder.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 1,
+    getValue: countPerfects,
+    visibility: 'always',
   },
+  
+  // ========== SKILL: PERFEITAS (números seguros) ==========
+  {
+    id: 'perfect4',
+    title: 'Olho de Falcão',
+    desc: '4 lições com 95%+ de precisão',
+    quote: 'Seus olhos não falham.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 4,
+    getValue: countPerfects,
+    visibility: 'near', // Aparece quando está perto (70%+)
+  },
+  {
+    id: 'perfect8',
+    title: 'Cirurgião',
+    desc: '8 lições com 95%+ de precisão',
+    quote: 'Cada corte, certeiro.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 8,
+    getValue: countPerfects,
+    visibility: 'near',
+  },
+  {
+    id: 'perfect14',
+    title: 'Implacável',
+    desc: '14 lições com 95%+ de precisão',
+    quote: 'Erros? Não conheço.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 14,
+    getValue: countPerfects,
+    visibility: 'near',
+  },
+  {
+    id: 'perfect22',
+    title: 'Sniper',
+    desc: '22 lições com 95%+ de precisão',
+    quote: 'Um tiro, um alvo.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 22,
+    getValue: countPerfects,
+    visibility: 'near',
+  },
+  
+  // ========== GRIND: LIÇÕES ==========
+  {
+    id: 'lesson5',
+    title: 'Aquecendo',
+    desc: 'Complete 5 lições',
+    quote: 'O motor está ligando.',
+    category: 'grind',
+    priority: PRIORITY.lesson,
+    target: 5,
+    getValue: countCompletedLessons,
+    visibility: 'near',
+  },
+  {
+    id: 'lesson12',
+    title: 'Engrenado',
+    desc: 'Complete 12 lições',
+    quote: 'O ritmo está pegando.',
+    category: 'grind',
+    priority: PRIORITY.lesson,
+    target: 12,
+    getValue: countCompletedLessons,
+    visibility: 'near',
+  },
+  {
+    id: 'lesson20',
+    title: 'Maratonista',
+    desc: 'Complete 20 lições',
+    quote: 'Resistência é tudo.',
+    category: 'grind',
+    priority: PRIORITY.lesson,
+    target: 20,
+    getValue: countCompletedLessons,
+    visibility: 'near',
+  },
+  {
+    id: 'lesson35',
+    title: 'Incansável',
+    desc: 'Complete 35 lições',
+    quote: 'Você não para.',
+    category: 'grind',
+    priority: PRIORITY.lesson,
+    target: 35,
+    getValue: countCompletedLessons,
+    visibility: 'near',
+  },
+  
+  // ========== MILESTONE: NODES ==========
   {
     id: 'node5',
-    mapId: 0,
-    title: 'Aventureiro',
+    title: 'Meio Mapa',
     desc: 'Complete 5 nodes',
-    quote: 'Metade do mapa conquistado. Você é persistente.',
+    quote: 'Metade do caminho.',
+    category: 'milestone',
+    priority: PRIORITY.node,
     target: 5,
-    getValue: countAllNodes,
+    getValue: countCompletedNodes,
+    visibility: 'near',
   },
-  {
-    id: 'story1',
-    mapId: 0,
-    title: 'Ouvinte',
-    desc: 'Complete sua primeira história',
-    quote: 'A primeira história terminou. Muitas virão.',
-    target: 1,
-    getValue: countCompletedStories,
-  },
-  {
-    id: 'xp500',
-    mapId: 0,
-    title: 'Centelha',
-    desc: 'Acumule 500 XP',
-    quote: 'Quinhentos pontos de experiência. A centelha virou chama.',
-    target: 500,
-    getValue: getXP,
-  },
-];
-
-// Mapa 1: MENOS FREQUENTE (To Be) - ~5 conquistas
-const MAP_1_ACHIEVEMENTS = [
-  {
-    id: 'node7',
-    mapId: 1,
-    title: 'Alpinista',
-    desc: 'Complete 7 nodes',
-    quote: 'O pico está próximo. Continue subindo.',
-    target: 7,
-    getValue: countAllNodes,
-  },
-  {
-    id: 'lesson18',
-    mapId: 1,
-    title: 'Leitor',
-    desc: 'Complete 18 lições',
-    quote: 'Dezoito capítulos da sua história.',
-    target: 18,
-    getValue: countCompletedLevels,
-  },
-  {
-    id: 'perfect10',
-    mapId: 1,
-    title: 'Perfeccionista',
-    desc: '10 lições perfeitas',
-    quote: 'Dez vezes impecável. Excelência como hábito.',
-    target: 10,
-    getValue: countAllPerfects,
-  },
-  {
-    id: 'story3',
-    mapId: 1,
-    title: 'Audiófilo',
-    desc: 'Complete 3 histórias',
-    quote: 'Três narrativas absorvidas. Seu ouvido evolui.',
-    target: 3,
-    getValue: countCompletedStories,
-  },
-  {
-    id: 'xp1000',
-    mapId: 1,
-    title: 'Brilhante',
-    desc: 'Acumule 1000 XP',
-    quote: 'Mil XP. Você brilha.',
-    target: 1000,
-    getValue: getXP,
-  },
-];
-
-// Mapa 2: RARO (Preposições) - ~4 conquistas
-const MAP_2_ACHIEVEMENTS = [
   {
     id: 'node10',
-    mapId: 2,
-    title: 'Mestre do Mapa',
+    title: 'Mapa Conquistado',
     desc: 'Complete 10 nodes',
-    quote: 'O mapa inteiro é seu. Lendário.',
+    quote: 'Um mundo inteiro é seu.',
+    category: 'milestone',
+    priority: PRIORITY.map,
     target: 10,
-    getValue: countAllNodes,
+    getValue: countCompletedNodes,
+    visibility: 'near',
   },
+  
+  // ========== SKILL: DIAMANTES ==========
   {
-    id: 'lesson30',
-    mapId: 2,
-    title: 'Veterano',
-    desc: 'Complete 30 lições',
-    quote: 'Trinta lições. Veterano de guerra.',
-    target: 30,
-    getValue: countCompletedLevels,
-  },
-  {
-    id: 'perfect20',
-    mapId: 2,
-    title: 'Virtuoso',
-    desc: '20 lições perfeitas',
-    quote: 'Vinte perfeitas. Virtuosismo puro.',
-    target: 20,
-    getValue: countAllPerfects,
-  },
-  {
-    id: 'xp2500',
-    mapId: 2,
-    title: 'Eletrizante',
-    desc: 'Acumule 2500 XP',
-    quote: 'Energia acumulada. Imparável.',
-    target: 2500,
-    getValue: getXP,
-  },
-];
-
-// === CONQUISTAS GLOBAIS (aparecem em qualquer mapa quando relevantes) ===
-const GLOBAL_ACHIEVEMENTS = [
-  {
-    id: 'diamond10',
-    mapId: null,
-    title: 'Colecionador',
-    desc: 'Acumule 10 diamantes',
-    quote: 'Dez diamantes brilham no seu cofre.',
-    target: 10,
+    id: 'diamond1',
+    title: 'Primeira Joia',
+    desc: 'Conquiste seu primeiro diamante',
+    quote: 'Brilhante.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 1,
     getValue: getDiamonds,
+    visibility: 'always',
   },
   {
-    id: 'diamond20',
-    mapId: null,
+    id: 'diamond7',
     title: 'Joalheiro',
-    desc: 'Acumule 20 diamantes',
-    quote: 'Vinte gemas. Riqueza merecida.',
-    target: 20,
+    desc: 'Conquiste 7 diamantes',
+    quote: 'Sua coleção cresce.',
+    category: 'skill',
+    priority: PRIORITY.skill,
+    target: 7,
     getValue: getDiamonds,
+    visibility: 'near',
+  },
+  
+  // ========== HABIT: STREAKS ==========
+  {
+    id: 'streak3',
+    title: 'Fogo Aceso',
+    desc: '3 dias seguidos',
+    quote: 'O hábito está se formando.',
+    category: 'grind',
+    priority: PRIORITY.habit,
+    target: 3,
+    getValue: getStreak,
+    visibility: 'near',
   },
   {
-    id: 'story5',
-    mapId: null,
-    title: 'Melômano',
-    desc: 'Complete 5 histórias',
-    quote: 'Cinco histórias. O inglês soa natural.',
-    target: 5,
-    getValue: countCompletedStories,
+    id: 'streak7',
+    title: 'Semana de Ferro',
+    desc: '7 dias seguidos',
+    quote: 'Uma semana. Disciplina.',
+    category: 'grind',
+    priority: PRIORITY.habit,
+    target: 7,
+    getValue: getStreak,
+    visibility: 'near',
   },
+  
+  // ========== GRIND: XP ==========
   {
-    id: 'story10',
-    mapId: null,
-    title: 'Maestro',
-    desc: 'Complete 10 histórias',
-    quote: 'Dez sinfonias de palavras. Virtuoso.',
-    target: 10,
-    getValue: countCompletedStories,
+    id: 'xp1500',
+    title: 'Energizado',
+    desc: 'Acumule 1500 XP',
+    quote: 'Energia pura.',
+    category: 'grind',
+    priority: PRIORITY.xp,
+    target: 1500,
+    getValue: getXP,
+    visibility: 'near',
   },
   {
     id: 'xp5000',
-    mapId: null,
-    title: 'Em Chamas',
+    title: 'Turbinado',
     desc: 'Acumule 5000 XP',
-    quote: 'Cinco mil. O fogo não apaga.',
+    quote: 'Máxima potência.',
+    category: 'grind',
+    priority: PRIORITY.xp,
     target: 5000,
     getValue: getXP,
+    visibility: 'near',
   },
+  
+  // ========== STORY ==========
   {
-    id: 'xp10000',
-    mapId: null,
-    title: 'Estelar',
-    desc: 'Acumule 10000 XP',
-    quote: 'Dez mil XP. Uma estrela nasceu.',
-    target: 10000,
-    getValue: getXP,
-  },
-  {
-    id: 'level5',
-    mapId: null,
-    title: 'Decolando',
-    desc: 'Alcance o nível 5',
-    quote: 'Nível 5. A decolagem foi suave.',
-    target: 5,
-    getValue: getLevel,
-  },
-  {
-    id: 'level10',
-    mapId: null,
-    title: 'Órbita',
-    desc: 'Alcance o nível 10',
-    quote: 'Nível 10. Você está em órbita.',
-    target: 10,
-    getValue: getLevel,
-  },
-  {
-    id: 'master',
-    mapId: null,
-    title: 'Mestre do Inglês',
-    desc: 'Complete todas as conquistas',
-    quote: 'Não há mais nada a conquistar. Você é o mestre.',
-    target: 24, // Total de conquistas - 1
-    getValue: (p) => (p.earnedAchievements || []).length,
+    id: 'story1',
+    title: 'Ouvinte',
+    desc: 'Complete sua primeira história',
+    quote: 'A primeira de muitas.',
+    category: 'story',
+    priority: PRIORITY.story,
+    target: 1,
+    getValue: countCompletedStories,
+    visibility: 'always',
   },
 ];
 
-// === TODAS AS CONQUISTAS ===
-export const ALL_ACHIEVEMENTS = [
-  ...MAP_0_ACHIEVEMENTS,
-  ...MAP_1_ACHIEVEMENTS,
-  ...MAP_2_ACHIEVEMENTS,
-  ...GLOBAL_ACHIEVEMENTS,
-];
 
-// === CONQUISTAS POR MAPA (para fácil acesso) ===
-export const ACHIEVEMENTS_BY_MAP = {
-  0: MAP_0_ACHIEVEMENTS,
-  1: MAP_1_ACHIEVEMENTS,
-  2: MAP_2_ACHIEVEMENTS,
+// ============================================
+// ÍCONES (mapeados para arquivos existentes)
+// ============================================
+
+export const ACHIEVEMENT_ICONS = {
+  // Milestone
+  first_lesson: 'compass',
+  first_node: 'shield',
+  first_perfect: 'target',
+  node5: 'map',
+  node10: 'castle',
+  
+  // Skill - Perfeitas
+  perfect4: 'target',
+  perfect8: 'medal',
+  perfect14: 'bolt',
+  perfect22: 'crown',
+  
+  // Skill - Diamantes
+  diamond1: 'diamond',
+  diamond7: 'crown',
+  
+  // Grind - Lições
+  lesson5: 'fire',
+  lesson12: 'bolt',
+  lesson20: 'comet',
+  lesson35: 'moon',
+  
+  // Grind - Streaks
+  streak3: 'fire',
+  streak7: 'sun',
+  
+  // Grind - XP
+  xp1500: 'sparkle',
+  xp5000: 'supernova',
+  
+  // Story
+  story1: 'headphones',
+  
+  // Fallback
+  default: 'star',
 };
 
-// === PRIORIDADES ===
-const PRIORITIES = {
-  node10: 100,
-  master: 100,
-  node1: 95,
-  lesson1: 95,
-  node7: 90,
-  node5: 85,
-  node3: 85,
-  lesson30: 85,
-  lesson18: 80,
-  lesson6: 75,
-  perfect20: 85,
-  perfect10: 80,
-  perfect5: 75,
-  diamond20: 80,
-  diamond10: 75,
-  story10: 85,
-  story5: 80,
-  story3: 75,
-  story1: 85,
-  xp10000: 80,
-  xp5000: 75,
-  xp2500: 70,
-  xp1000: 65,
-  xp500: 60,
-  level10: 70,
-  level5: 65,
-  default: 50,
+export const getAchievementIcon = (id) => {
+  const iconName = ACHIEVEMENT_ICONS[id] || ACHIEVEMENT_ICONS.default;
+  return `/achievements/${iconName}.png`;
 };
 
-export const getPriority = (id) => PRIORITIES[id] ?? PRIORITIES.default;
 
-// === UTILIDADES ===
+// ============================================
+// SISTEMA DE VISIBILIDADE DINÂMICA
+// ============================================
 
-export const getAchievementById = (id) => {
-  return ALL_ACHIEVEMENTS.find(a => a.id === id) || null;
+/**
+ * Retorna conquistas que devem aparecer na Home
+ * 
+ * Regras:
+ * 1. Conquistadas: sempre mostram
+ * 2. visibility: 'always': sempre mostram
+ * 3. visibility: 'near': mostram se >= 50% do target
+ * 4. Limite: máximo 2 não-conquistadas por categoria
+ * 
+ * @param {number} currentMapId - Mapa atual (não usado mais, mas mantido por compatibilidade)
+ * @param {string[]} earnedIds - IDs das conquistadas
+ * @param {object} progress - Progresso do usuário
+ * @returns {object[]} Lista de conquistas visíveis
+ */
+export const getVisibleAchievements = (currentMapId, earnedIds = [], progress = {}) => {
+  const earned = [];
+  const visible = [];
+  
+  for (const achievement of CORE_ACHIEVEMENTS) {
+    const isEarned = earnedIds.includes(achievement.id);
+    const currentValue = achievement.getValue(progress);
+    const percent = achievement.target > 0 ? currentValue / achievement.target : 0;
+    
+    if (isEarned) {
+      earned.push({ ...achievement, earned: true, currentValue, percent: 1 });
+      continue;
+    }
+    
+    // Verifica visibilidade
+    let shouldShow = false;
+    
+    if (achievement.visibility === 'always') {
+      shouldShow = true;
+    } else if (achievement.visibility === 'near') {
+      // Mostra se >= 50% do target
+      shouldShow = percent >= 0.5;
+    }
+    
+    if (shouldShow) {
+      visible.push({ ...achievement, earned: false, currentValue, percent });
+    }
+  }
+  
+  // Limita não-conquistadas: máximo 2 por categoria
+  const visibleByCategory = {};
+  const limitedVisible = [];
+  
+  for (const a of visible) {
+    if (!visibleByCategory[a.category]) {
+      visibleByCategory[a.category] = 0;
+    }
+    if (visibleByCategory[a.category] < 2) {
+      limitedVisible.push(a);
+      visibleByCategory[a.category]++;
+    }
+  }
+  
+  // Ordena: conquistadas primeiro, depois por progresso
+  return [
+    ...earned.sort((a, b) => b.priority - a.priority),
+    ...limitedVisible.sort((a, b) => b.percent - a.percent),
+  ];
+};
+
+
+// ============================================
+// SISTEMA ANTI-COLISÃO
+// ============================================
+
+/**
+ * Detecta novas conquistas desbloqueadas
+ * 
+ * @param {string[]} earnedIds - IDs já conquistadas
+ * @param {object} progress - Progresso atual
+ * @returns {object[]} Lista de conquistas recém-desbloqueadas
+ */
+export const detectNewAchievements = (earnedIds = [], progress = {}) => {
+  const newlyUnlocked = [];
+  
+  for (const achievement of CORE_ACHIEVEMENTS) {
+    // Já tem?
+    if (earnedIds.includes(achievement.id)) continue;
+    
+    // Atingiu o target?
+    const currentValue = achievement.getValue(progress);
+    if (currentValue >= achievement.target) {
+      newlyUnlocked.push(achievement);
+    }
+  }
+  
+  return newlyUnlocked;
 };
 
 /**
- * Verifica quais conquistas foram desbloqueadas
+ * Retorna a próxima conquista a ser celebrada
+ * Usa prioridade para evitar colisão
+ * 
+ * @param {object[]} queue - Fila de conquistas pendentes
+ * @returns {{ next: object|null, remaining: object[] }}
  */
-export const checkNewAchievements = (progress, earned = [], pending = []) => {
-  const alreadyProcessed = [...earned, ...pending];
+export const getNextCelebration = (queue = []) => {
+  if (queue.length === 0) {
+    return { next: null, remaining: [] };
+  }
+  
+  // Ordena por prioridade (menor = mais importante)
+  const sorted = [...queue].sort((a, b) => a.priority - b.priority);
+  
+  return {
+    next: sorted[0],
+    remaining: sorted.slice(1),
+  };
+};
+
+/**
+ * Processa conquistas no final de uma lição
+ * Retorna UMA conquista para celebrar agora + fila para depois
+ * 
+ * @param {string[]} earnedIds - IDs já conquistadas
+ * @param {string[]} pendingIds - IDs na fila
+ * @param {object} progress - Progresso atualizado
+ * @returns {{ celebrate: object|null, newEarned: string[], newPending: string[] }}
+ */
+export const processLessonComplete = (earnedIds = [], pendingIds = [], progress = {}) => {
+  // Detecta novas
+  const newlyUnlocked = detectNewAchievements(earnedIds, progress);
+  
+  // Junta com pending
+  const allPending = [
+    ...pendingIds.map(id => CORE_ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean),
+    ...newlyUnlocked,
+  ];
+  
+  // Remove duplicatas
+  const uniquePending = allPending.filter((a, i, arr) => 
+    arr.findIndex(b => b.id === a.id) === i
+  );
+  
+  // Pega a próxima
+  const { next, remaining } = getNextCelebration(uniquePending);
+  
+  return {
+    celebrate: next,
+    newEarned: next ? [...earnedIds, next.id] : earnedIds,
+    newPending: remaining.map(a => a.id),
+  };
+};
+
+
+// ============================================
+// ESTATÍSTICAS
+// ============================================
+
+/**
+ * Retorna estatísticas de conquistas
+ */
+export const getAchievementStats = (earnedIds = []) => {
+  const total = CORE_ACHIEVEMENTS.length;
+  const earned = earnedIds.filter(id => 
+    CORE_ACHIEVEMENTS.some(a => a.id === id)
+  ).length;
+  const percent = total > 0 ? Math.round((earned / total) * 100) : 0;
+  
+  return { earned, total, percent };
+};
+
+
+// ============================================
+// COMPATIBILIDADE (funções usadas por outros componentes)
+// ============================================
+
+/**
+ * Conta nodes completos de um mapa específico
+ */
+export const getMapProgress = (mapId, progress) => {
+  if (!progress?.completedLevels) return 0;
+  
+  const mapPrefix = `map${mapId}:`;
+  const nodeSet = new Set();
+  
+  // Encontra todos os nodes que têm pelo menos 1 level
+  Object.keys(progress.completedLevels).forEach(key => {
+    if (key.startsWith(mapPrefix)) {
+      const match = key.match(/node(\d+)/);
+      if (match) nodeSet.add(match[1]);
+    }
+  });
+  
+  // Conta nodes com 3 levels completos
+  let fullyCompleted = 0;
+  nodeSet.forEach(nodeId => {
+    const bronzeKey = `map${mapId}:node${nodeId}-${mapId}_${nodeId}_bronze`;
+    const silverKey = `map${mapId}:node${nodeId}-${mapId}_${nodeId}_silver`;
+    const goldKey = `map${mapId}:node${nodeId}-${mapId}_${nodeId}_gold`;
+    
+    if (progress.completedLevels[bronzeKey] && 
+        progress.completedLevels[silverKey] && 
+        progress.completedLevels[goldKey]) {
+      fullyCompleted++;
+    }
+  });
+  
+  return fullyCompleted;
+};
+
+/**
+ * Verifica se um mapa está desbloqueado
+ * Map 0 sempre desbloqueado, outros precisam do anterior completo
+ * 
+ * @returns {{ unlocked: boolean, nodesCompleted: number, nodesRequired: number }}
+ */
+export const isMapUnlocked = (mapId, progress) => {
+  const nodesRequired = 10;
+  
+  if (mapId === 0) {
+    return { 
+      unlocked: true, 
+      nodesCompleted: nodesRequired, 
+      nodesRequired 
+    };
+  }
+  
+  // Conta nodes completos do mapa anterior
+  const prevMapId = mapId - 1;
+  const nodesCompleted = getMapProgress(prevMapId, progress);
+  
+  return {
+    unlocked: nodesCompleted >= nodesRequired,
+    nodesCompleted,
+    nodesRequired,
+  };
+};
+
+/**
+ * Checa conquistas novas (compatibilidade com useProgress antigo)
+ * Agora é um wrapper para detectNewAchievements
+ */
+export const checkNewAchievements = (progress, earnedIds = [], pendingIds = []) => {
+  const allKnown = [...earnedIds, ...pendingIds];
   const newlyUnlocked = [];
   
-  ALL_ACHIEVEMENTS.forEach(achievement => {
-    if (alreadyProcessed.includes(achievement.id)) return;
+  for (const achievement of CORE_ACHIEVEMENTS) {
+    if (allKnown.includes(achievement.id)) continue;
     
     const currentValue = achievement.getValue(progress);
     if (currentValue >= achievement.target) {
       newlyUnlocked.push(achievement.id);
     }
-  });
-  
-  return newlyUnlocked.sort((a, b) => getPriority(b) - getPriority(a));
-};
-
-/**
- * Retorna conquistas VISÍVEIS baseado no mapa atual
- * - Conquistas do mapa atual
- * - Conquistas de mapas anteriores já conquistadas
- * - Conquistas globais com 30%+ de progresso ou já conquistadas
- */
-export const getVisibleAchievements = (currentMapId = 0, earnedAchievements = [], progress = {}) => {
-  const visible = [];
-  const seen = new Set();
-  
-  // 1. Conquistas do mapa atual (sempre visíveis)
-  const currentMapAchievements = ACHIEVEMENTS_BY_MAP[currentMapId] || [];
-  currentMapAchievements.forEach(a => {
-    if (!seen.has(a.id)) {
-      seen.add(a.id);
-      visible.push({
-        ...a,
-        earned: earnedAchievements.includes(a.id),
-      });
-    }
-  });
-  
-  // 2. Conquistas de mapas ANTERIORES já conquistadas
-  for (let mapId = 0; mapId < currentMapId; mapId++) {
-    const prevMapAchievements = ACHIEVEMENTS_BY_MAP[mapId] || [];
-    prevMapAchievements.forEach(a => {
-      if (!seen.has(a.id) && earnedAchievements.includes(a.id)) {
-        seen.add(a.id);
-        visible.push({
-          ...a,
-          earned: true,
-        });
-      }
-    });
   }
   
-  // 3. Conquistas globais
-  GLOBAL_ACHIEVEMENTS.forEach(a => {
-    if (seen.has(a.id)) return;
-    
-    const earned = earnedAchievements.includes(a.id);
-    const currentValue = a.getValue(progress);
-    const percent = Math.round((currentValue / a.target) * 100);
-    
-    // Mostra se: já conquistou OU está com mais de 25% de progresso
-    if (earned || percent >= 25) {
-      seen.add(a.id);
-      visible.push({
-        ...a,
-        earned,
-      });
-    }
-  });
-  
-  return visible;
+  return newlyUnlocked;
 };
 
 /**
- * Stats para exibição (total = todas as conquistas)
+ * Busca achievement por ID
  */
-export const getAchievementStats = (earnedAchievements = []) => {
-  const total = ALL_ACHIEVEMENTS.length;
-  const earned = earnedAchievements.length;
-  
-  return {
-    earned,
-    total,
-    percent: Math.round((earned / total) * 100),
-    // Mantém compatibilidade
-    visible: earned,
-    visibleTotal: total,
-  };
+export const getAchievementById = (id) => {
+  return CORE_ACHIEVEMENTS.find(a => a.id === id) || null;
 };
 
-/**
- * Verifica se um mapa está desbloqueado
- */
-export const isMapUnlocked = (mapId, progress) => {
-  if (mapId === 0) {
-    return { unlocked: true, reason: null, progress: 100 };
-  }
-  
-  const previousMapId = mapId - 1;
-  const previousNodes = countMapNodes(progress, previousMapId);
-  const requiredNodes = 10;
-  
-  if (previousNodes >= requiredNodes) {
-    return { unlocked: true, reason: null, progress: 100 };
-  }
-  
-  return {
-    unlocked: false,
-    reason: `Complete o Mapa ${previousMapId} primeiro`,
-    progress: Math.round((previousNodes / requiredNodes) * 100),
-    nodesCompleted: previousNodes,
-    nodesRequired: requiredNodes,
-  };
+
+// ============================================
+// EXPORTS
+// ============================================
+
+export const ALL_ACHIEVEMENTS = CORE_ACHIEVEMENTS;
+
+export default {
+  ALL_ACHIEVEMENTS,
+  CORE_ACHIEVEMENTS,
+  MILESTONES: {
+    PERFECT_MILESTONES,
+    LESSON_MILESTONES,
+    XP_MILESTONES,
+    DIAMOND_MILESTONES,
+    STREAK_MILESTONES,
+    STORY_MILESTONES,
+  },
+  PRIORITY,
+  CATEGORIES,
+  getVisibleAchievements,
+  getAchievementStats,
+  getAchievementIcon,
+  detectNewAchievements,
+  getNextCelebration,
+  processLessonComplete,
+  // Compatibilidade
+  isMapUnlocked,
+  getMapProgress,
+  checkNewAchievements,
+  getAchievementById,
 };
-
-/**
- * Conta nodes completos em um mapa (exportado para uso externo)
- */
-export const getMapProgress = (mapId, progress) => {
-  return countMapNodes(progress, mapId);
-};
-
-// === COMPATIBILIDADE COM CÓDIGO ANTIGO ===
-
-export const getDisplayAchievements = (earnedAchievements = []) => {
-  return ALL_ACHIEVEMENTS.map(a => ({
-    ...a,
-    earned: earnedAchievements.includes(a.id),
-  }));
-};
-
-export const getAchievementsByCategory = (earnedAchievements = []) => {
-  const categories = {
-    milestone: { name: 'Marcos', achievements: [] },
-    map: { name: 'Mapa', achievements: [] },
-    grind: { name: 'Dedicação', achievements: [] },
-    skill: { name: 'Habilidade', achievements: [] },
-    resource: { name: 'Recursos', achievements: [] },
-    stories: { name: 'Histórias', achievements: [] },
-    xp: { name: 'Experiência', achievements: [] },
-    level: { name: 'Nível', achievements: [] },
-    legendary: { name: 'Lendárias', achievements: [] },
-  };
-  
-  // Categorização automática por ID
-  ALL_ACHIEVEMENTS.forEach(a => {
-    let cat = 'grind';
-    if (a.id.startsWith('node') || a.id === 'allnodes') cat = 'map';
-    else if (a.id.startsWith('lesson')) cat = 'grind';
-    else if (a.id.startsWith('perfect')) cat = 'skill';
-    else if (a.id.startsWith('diamond')) cat = 'resource';
-    else if (a.id.startsWith('story')) cat = 'stories';
-    else if (a.id.startsWith('xp')) cat = 'xp';
-    else if (a.id.startsWith('level')) cat = 'level';
-    else if (a.id === 'master') cat = 'legendary';
-    
-    categories[cat].achievements.push({
-      ...a,
-      earned: earnedAchievements.includes(a.id),
-    });
-  });
-  
-  return categories;
-};
-
-export const ACHIEVEMENT_TIERS = [
-  { id: 1, name: 'Conquistas', achievements: ALL_ACHIEVEMENTS }
-];
-
-export default ALL_ACHIEVEMENTS;

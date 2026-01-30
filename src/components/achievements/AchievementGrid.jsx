@@ -5,23 +5,21 @@
  * Mobile: 5 colunas × 2 rows = 10 visíveis
  * Desktop: 10 colunas × 2 rows = 20 visíveis
  * 
- * ATUALIZADO: Importa ACHIEVEMENT_ICONS do achievementsData.js
+ * ATUALIZADO: IDs compatíveis com achievementsData.js v2
  */
 
 import { motion } from 'framer-motion';
 import { COLORS } from '../../tokens';
 import { ACHIEVEMENT_ICONS } from '../../data/achievementsData';
 
+// Ordem de exibição - IDs do novo sistema
 const DISPLAY_ORDER = [
-  // Linha 1 - Primeiras conquistas
-  'lesson1', 'node1', 'lesson6', 'node3', 'perfect5',
-  'node5', 'story1', 'xp500', 'level5', 'diamond10',
-  // Linha 2 - Conquistas intermediárias
-  'node7', 'node10', 'story3', 'lesson18', 'perfect10',
-  'xp1000', 'story5', 'level10', 'xp2500', 'diamond20',
-  // Linha 3+ - Conquistas avançadas
-  'allnodes', 'story10', 'lesson30', 'perfect20', 'xp5000',
-  'level15', 'story20', 'xp10000', 'level20', 'master',
+  // Linha 1 - Primeiros passos
+  'first_lesson', 'first_node', 'first_perfect', 'diamond1', 'lesson5',
+  'perfect4', 'streak3', 'node5', 'perfect8', 'lesson12',
+  // Linha 2 - Intermediário
+  'xp1500', 'node10', 'perfect14', 'lesson20', 'streak7',
+  'diamond7', 'lesson35', 'perfect22', 'xp5000', 'story1',
 ];
 
 export default function AchievementGrid({ 
@@ -36,10 +34,28 @@ export default function AchievementGrid({
   const mobileSlots = 10;
   const desktopSlots = 20;
   
+  // Ordena por DISPLAY_ORDER, depois conquistas ganhas primeiro
   const sortedAchievements = [...achievements].sort((a, b) => {
+    // Prioridade 1: Ordem definida
     const indexA = DISPLAY_ORDER.indexOf(a.id);
     const indexB = DISPLAY_ORDER.indexOf(b.id);
-    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    
+    // Se ambos estão na lista, usa a ordem
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    
+    // Se só um está na lista, ele vem primeiro
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    
+    // Prioridade 2: Conquistadas primeiro
+    const earnedA = earnedAchievements.includes(a.id);
+    const earnedB = earnedAchievements.includes(b.id);
+    if (earnedA && !earnedB) return -1;
+    if (!earnedA && earnedB) return 1;
+    
+    return 0;
   });
 
   const hasMore = sortedAchievements.length > mobileSlots;
@@ -51,8 +67,9 @@ export default function AchievementGrid({
         {sortedAchievements.slice(0, desktopSlots).map((achievement, index) => {
           const isEarned = earnedAchievements.includes(achievement.id);
           const currentValue = achievement.getValue?.(progress) || 0;
-          const percent = Math.min(100, Math.round((currentValue / achievement.target) * 100));
-          const iconName = ACHIEVEMENT_ICONS[achievement.id] || 'shield';
+          const target = achievement.target || 1;
+          const percent = Math.min(100, Math.round((currentValue / target) * 100));
+          const iconName = ACHIEVEMENT_ICONS[achievement.id] || 'star';
           
           // No mobile, esconde a partir do slot 10
           const hideOnMobile = index >= mobileSlots;

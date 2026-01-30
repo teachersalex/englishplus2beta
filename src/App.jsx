@@ -1,21 +1,16 @@
 /**
  * App.jsx
- * EnglishPlus 2.0 - Arquitetura de Conquistas Redesenhada
+ * EnglishPlus 2.0 - Sistema Anti-Colisão de Conquistas
  * 
  * "A simplicidade é a sofisticação máxima."
  *  — Leonardo da Vinci
  * 
- * FLUXO DE CONQUISTAS:
- * 1. completeLevel() detecta e adiciona em PENDING
- * 2. LessonRunner mostra modal da primeira (mais prioritária)
- * 3. Após celebrar, celebrateAchievement() move para EARNED
- * 4. Badge na Home só mostra EARNED
- * 
- * UX FIXES:
- * - Scroll to top em mudança de seção
- * - Botão voltar do browser navega dentro do app (listener único via ref)
- * - Guard anti-duplo-clique no completeLevel
- * - getNextLessonInfo memoizado
+ * FLUXO DE CONQUISTAS (v2):
+ * 1. completeLevel() salva level e retorna progress atualizado
+ * 2. LessonRunner usa processLessonComplete() para detectar conquistas
+ * 3. Sistema de prioridade decide qual celebrar (nunca 2 ao mesmo tempo)
+ * 4. Resto vai pra pendingAchievements (próxima sessão)
+ * 5. Badge na Home só mostra earnedAchievements
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -81,49 +76,34 @@ function AppContent() {
   // BROWSER BACK BUTTON - Listener único via ref
   // ============================================
   
-  // Ref que sempre tem o estado atual (evita re-registrar listener)
   const navRef = useRef({
     currentSection: 'home',
     currentStorySection: 'hub',
     isInLesson: false,
   });
 
-  // Mantém ref sincronizado
   useEffect(() => {
     navRef.current = { currentSection, currentStorySection, isInLesson };
   }, [currentSection, currentStorySection, isInLesson]);
 
-  // Função estável que lê do ref
   const getBackDestination = useCallback(() => {
     const { currentSection, currentStorySection, isInLesson } = navRef.current;
 
-    // Em lição → volta pro mapa
     if (isInLesson) return { type: 'exitLesson' };
-    
-    // Em mapa → volta pro world select
     if (currentSection === 'map') return { type: 'section', to: 'adventure' };
-    
-    // Em world select → volta pra home
     if (currentSection === 'adventure') return { type: 'section', to: 'home' };
     
-    // Em stories player → volta pro hub
     if (currentSection === 'stories' && currentStorySection === 'player') {
       return { type: 'storiesHub' };
     }
-    
-    // Em stories hub → volta pra home
     if (currentSection === 'stories' && currentStorySection === 'hub') {
       return { type: 'section', to: 'home' };
     }
-    
-    // Em outras seções (stats, training, profile) → volta pra home
     if (currentSection !== 'home') return { type: 'section', to: 'home' };
     
-    // Já está na home → não faz nada (deixa o browser sair se quiser)
     return null;
   }, []);
 
-  // Listener único - só registra 1x
   useEffect(() => {
     const pushState = () => {
       window.history.pushState({ app: true }, '');
@@ -132,15 +112,10 @@ function AppContent() {
     const handlePopState = () => {
       const destination = getBackDestination();
       
-      if (!destination) {
-        // Está na home, deixa sair
-        return;
-      }
+      if (!destination) return;
       
-      // Previne saída do app
       pushState();
       
-      // Navega internamente
       switch (destination.type) {
         case 'exitLesson':
           setIsInLesson(false);
@@ -157,7 +132,6 @@ function AppContent() {
       }
     };
 
-    // Setup inicial - só 1x
     pushState();
     window.addEventListener('popstate', handlePopState);
 
@@ -204,7 +178,7 @@ function AppContent() {
     return { title: 'Tudo completo!', module: 'Parabéns!', theme: '' };
   }, [currentMapId, progress, getNodeState, getNextLevel, getNodeProgress]);
 
-  // Inicia lição de um node específico (usa mapa atual)
+  // Inicia lição de um node específico
   const startNodeLesson = (nodeId) => {
     const mapData = getMapData(currentMapId);
     if (!mapData) return;
@@ -235,7 +209,7 @@ function AppContent() {
   }
 
   // ============================================
-  // TELA DE LIÇÃO (fullscreen)
+  // TELA DE LIÇÃO (fullscreen) - COM ANTI-COLISÃO
   // ============================================
   if (isInLesson && currentLesson) {
     const { nodeId, mapId, node, level, currentRound } = currentLesson;
@@ -254,28 +228,40 @@ function AppContent() {
           currentRound: currentRound,
           totalRounds: 3,
         }}
+        
+        // Dados para o sistema anti-colisão
+        earnedAchievements={progress?.earnedAchievements || []}
+        pendingAchievements={progress?.pendingAchievements || []}
+        currentProgress={progress}
+        
         onComplete={async (result) => {
           // Guard anti-duplo-clique
           if (completeGuardRef.current) {
-            return { newlyUnlocked: [] };
+            return { progress: {} };
           }
           completeGuardRef.current = true;
 
           try {
-            const { newlyUnlocked } = await completeLevel(mapId, nodeId, level.id, {
+            const completionResult = await completeLevel(mapId, nodeId, level.id, {
               accuracy: result.accuracy || 0,
               xpEarned: result.xp || 0,
               earnedDiamond: result.earnedDiamond || false,
             });
-            return { newlyUnlocked: newlyUnlocked || [] };
+            
+            // Retorna progress atualizado para o LessonRunner
+            return { 
+              progress: completionResult.progress || progress,
+            };
           } catch (err) {
             console.error('completeLevel failed:', err);
-            return { newlyUnlocked: [] };
+            return { progress };
           } finally {
             completeGuardRef.current = false;
           }
         }}
+        
         onCelebrateAchievement={celebrateAchievement}
+        
         onExit={() => {
           setIsInLesson(false);
           setCurrentLesson(null);
@@ -333,11 +319,11 @@ function AppContent() {
       <WorldSelect
         progress={progress}
         onSelectWorld={(mapId) => {
-        setCurrentMapId(mapId);
-        setCurrentSection('map');
-  }}
-  onBack={() => setCurrentSection('home')}
-/>
+          setCurrentMapId(mapId);
+          setCurrentSection('map');
+        }}
+        onBack={() => setCurrentSection('home')}
+      />
     );
   }
 
@@ -388,14 +374,14 @@ function AppContent() {
       onLogout={logout}
     >
       {currentSection === 'home' && (
-    <HomeScreen
-        user={userData}
-        progress={progress}
-        nextLesson={nextLessonInfo}
-        onStartLesson={handleStartLesson}
-        onNavigate={handleNavigate}
-        currentMapId={currentMapId}
-      />
+        <HomeScreen
+          user={userData}
+          progress={progress}
+          nextLesson={nextLessonInfo}
+          onStartLesson={handleStartLesson}
+          onNavigate={handleNavigate}
+          currentMapId={currentMapId}
+        />
       )}
 
       {currentSection === 'stats' && <StatsScreen />}

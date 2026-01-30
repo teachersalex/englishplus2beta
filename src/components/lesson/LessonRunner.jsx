@@ -2,21 +2,29 @@
  * LessonRunner.jsx
  * Orquestra as engines de uma rodada de 5 atividades
  * 
+ * "O jogador só vê a magia. Nunca a engrenagem."
+ *  — Alex Santos
+ * 
  * FLUXO DE CELEBRAÇÃO:
  * 1. Completa 5 atividades
  * 2. Se ≥90% → DiamondModal
- * 3. Diamond fecha → "Salvando..." → AchievementModal (se tiver)
- * 4. Achievement fecha → salva como CELEBRATED → CompletionModal
+ * 3. Diamond fecha → AchievementModal (se tiver, por prioridade)
+ * 4. Achievement fecha → CompletionModal
+ * 5. Conquistas extras vão pra fila (próxima sessão)
  * 
- * REGRA DE OURO:
- * - Nunca dois modais ao mesmo tempo
- * - Badge só acende APÓS celebrar
+ * SISTEMA ANTI-COLISÃO:
+ * - processLessonComplete() decide qual celebrar
+ * - Prioridade: secret > boss > map > node > skill > story > lesson > xp > habit
+ * - Resto vai pra pendingAchievements (Firebase)
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { thresholds } from '../../data/gameSchema';
-import { getAchievementById } from '../../data/achievementsData';
+import { 
+  processLessonComplete,
+  ALL_ACHIEVEMENTS,
+} from '../../data/achievementsData';
 
 // Engines
 import {
@@ -47,11 +55,22 @@ const EngineComponents = {
   ordering: Ordering,
 };
 
+/**
+ * Busca achievement completo pelo ID
+ */
+const getAchievementById = (id) => {
+  return ALL_ACHIEVEMENTS.find(a => a.id === id) || null;
+};
+
 export function LessonRunner({ 
   lesson, 
   onComplete, 
   onExit,
   onCelebrateAchievement,
+  // Novos props para anti-colisão
+  earnedAchievements = [],
+  pendingAchievements = [],
+  currentProgress = {},
 }) {
   const { title, lore, tip, activities, currentRound = 1, totalRounds = 3 } = lesson;
 
@@ -68,9 +87,13 @@ export function LessonRunner({
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [earnedDiamond, setEarnedDiamond] = useState(false);
   
-  // Ref para evitar double-completion
+  // Refs para controle
   const completionLockRef = useRef(false);
-  const achievementToSaveRef = useRef(null);
+  const celebrationDataRef = useRef({
+    achievementToCelebrate: null,
+    newEarnedIds: [],
+    newPendingIds: [],
+  });
   
   useEffect(() => {
     completionLockRef.current = false;
@@ -145,27 +168,42 @@ export function LessonRunner({
     setFinalResult(resultPayload);
     setEarnedDiamond(diamond);
 
-    // Chama onComplete para salvar progresso e detectar conquistas
-    let achievementId = null;
+    // Chama onComplete para salvar progresso
+    let updatedProgress = currentProgress;
     if (onComplete) {
       try {
         const completionResult = await onComplete(resultPayload);
-        
-        if (completionResult?.newlyUnlocked?.length > 0) {
-          achievementId = completionResult.newlyUnlocked[0];
-          const achievement = getAchievementById(achievementId);
-          setCurrentAchievement(achievement);
-          achievementToSaveRef.current = achievementId;
+        if (completionResult?.progress) {
+          updatedProgress = completionResult.progress;
         }
       } catch (e) {
         console.error('Erro ao salvar progresso:', e);
       }
     }
 
+    // === SISTEMA ANTI-COLISÃO ===
+    // Processa conquistas com prioridade
+    const { celebrate, newEarned, newPending } = processLessonComplete(
+      earnedAchievements,
+      pendingAchievements,
+      updatedProgress
+    );
+
+    // Guarda para usar depois
+    celebrationDataRef.current = {
+      achievementToCelebrate: celebrate,
+      newEarnedIds: newEarned,
+      newPendingIds: newPending,
+    };
+
+    if (celebrate) {
+      setCurrentAchievement(celebrate);
+    }
+
     // Inicia fluxo de celebração
     if (diamond) {
       setCelebrationPhase('diamond');
-    } else if (achievementId) {
+    } else if (celebrate) {
       setCelebrationPhase('achievement');
     } else {
       setCelebrationPhase('completion');
@@ -175,13 +213,10 @@ export function LessonRunner({
   /**
    * Diamond modal fechou
    */
-  const handleDiamondComplete = async () => {
-    if (currentAchievement) {
-      setSavingMessage('Salvando progresso...');
-      setCelebrationPhase('saving');
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+  const handleDiamondComplete = () => {
+    const { achievementToCelebrate } = celebrationDataRef.current;
+    
+    if (achievementToCelebrate) {
       setCelebrationPhase('achievement');
     } else {
       setCelebrationPhase('completion');
@@ -192,17 +227,28 @@ export function LessonRunner({
    * Achievement modal fechou
    */
   const handleAchievementComplete = async () => {
-    if (achievementToSaveRef.current && onCelebrateAchievement) {
+    const { achievementToCelebrate, newEarnedIds, newPendingIds } = celebrationDataRef.current;
+    
+    if (achievementToCelebrate && onCelebrateAchievement) {
       setSavingMessage('Registrando conquista...');
       setCelebrationPhase('saving');
       
-      await onCelebrateAchievement(achievementToSaveRef.current);
+      try {
+        // Passa a conquista celebrada + novas listas
+        await onCelebrateAchievement({
+          celebratedId: achievementToCelebrate.id,
+          newEarnedIds,
+          newPendingIds,
+        });
+      } catch (e) {
+        console.error('Erro ao registrar conquista:', e);
+      }
       
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Pequeno delay para UX
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
     
     setCelebrationPhase('completion');
-    achievementToSaveRef.current = null;
   };
 
   /**
@@ -222,7 +268,11 @@ export function LessonRunner({
     setCelebrationPhase('activity');
     setCurrentAchievement(null);
     setEarnedDiamond(false);
-    achievementToSaveRef.current = null;
+    celebrationDataRef.current = {
+      achievementToCelebrate: null,
+      newEarnedIds: [],
+      newPendingIds: [],
+    };
     completionLockRef.current = false;
   };
 
@@ -284,11 +334,18 @@ export function LessonRunner({
             {title && <h1 className="text-xl font-bold mb-1 text-[#1E293B]">{title}</h1>}
             {lore && <p className="text-[#64748B] text-sm">{lore}</p>}
             {tip && (
-              <div className="mt-3 p-3 bg-[#EFF6FF] border border-[#3B82F6] rounded-xl text-sm">
-                <span className="text-[#3B82F6]">💡</span>
-                <strong className="text-[#1E40AF] ml-1">Teacher Alex:</strong>
-                <span className="text-[#1E293B] ml-1">{tip}</span>
-              </div>
+              <details className="mt-3">
+                <summary className="cursor-pointer p-3 bg-[#EFF6FF] border border-[#3B82F6] rounded-xl text-sm flex items-center gap-2">
+                  <span className="text-[#3B82F6]">💡</span>
+                  <strong className="text-[#1E40AF]">Dica do Teacher Alex</strong>
+                  <svg className="w-4 h-4 text-[#3B82F6] ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <div className="mt-2 p-3 bg-[#EFF6FF] rounded-xl text-sm text-[#1E293B]">
+                  {tip}
+                </div>
+              </details>
             )}
           </motion.div>
         )}

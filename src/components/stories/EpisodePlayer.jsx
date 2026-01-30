@@ -1,19 +1,24 @@
 /**
  * EpisodePlayer.jsx
- * Player de histórias com sistema de conquistas
+ * Player de histórias com sistema de conquistas (v2 - Anti-Colisão)
  * 
- * FIX: Modal NÃO aparece automaticamente após verificar
- *      Aluno precisa VER o feedback antes do modal
- *      Modal só aparece quando clica "Próximo Episódio"
+ * "O jogador só vê a magia. Nunca a engrenagem."
+ *  — Alex Santos
+ * 
+ * FLUXO:
+ * 1. Usuário verifica transcrição → mostra diff
+ * 2. Clica "Próximo" → detecta conquistas com processLessonComplete()
+ * 3. Celebra UMA conquista (por prioridade)
+ * 4. Resto vai pra pendingAchievements
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS } from '../../tokens';
 import { thresholds } from '../../data/gameSchema';
 import { calculateDiff } from '../../utils/dictationDiff';
 import { seriesById } from '../../data/stories';
-import { getAchievementById } from '../../data/achievementsData';
+import { processLessonComplete, ALL_ACHIEVEMENTS } from '../../data/achievementsData';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import AudioPlayerCard from './AudioPlayerCard';
 import DictationArea from './DictationArea';
@@ -36,6 +41,9 @@ export default function EpisodePlayer({
   progress,
   onUpdateProgress,
   onCelebrateAchievement,
+  // Props para sistema anti-colisão (opcional - pega do progress se não passar)
+  earnedAchievements,
+  pendingAchievements,
 }) {
   const series = seriesById[seriesId];
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
@@ -45,10 +53,17 @@ export default function EpisodePlayer({
   const [savingMessage, setSavingMessage] = useState('');
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [episodeModalData, setEpisodeModalData] = useState(null);
-  const [achievementIdToSave, setAchievementIdToSave] = useState(null);
   
-  // ★ FIX: Flag para saber qual celebração mostrar quando clicar em Próximo
+  // Flag para saber qual celebração mostrar quando clicar em Próximo
   const [pendingCelebration, setPendingCelebration] = useState(null);
+  
+  // Ref para dados de celebração (evita re-renders)
+  const celebrationDataRef = useRef({
+    achievementToCelebrate: null,
+    newEarnedIds: [],
+    newPendingIds: [],
+    updatedProgress: null,
+  });
 
   const episode = series?.episodes?.[currentEpisodeIndex];
   const totalEpisodes = series?.episodes?.length || 0;
@@ -57,27 +72,36 @@ export default function EpisodePlayer({
   const audio = useAudioPlayer(episode?.audioUrl);
 
   const isModalActive = celebrationPhase !== 'dictation';
+  
+  // Pega listas do progress se não foram passadas como props
+  const currentEarnedAchievements = earnedAchievements || progress?.earnedAchievements || [];
+  const currentPendingAchievements = pendingAchievements || progress?.pendingAchievements || [];
 
   useEffect(() => {
     setFeedback(null);
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
     setEpisodeModalData(null);
-    setAchievementIdToSave(null);
     setPendingCelebration(null);
+    celebrationDataRef.current = {
+      achievementToCelebrate: null,
+      newEarnedIds: [],
+      newPendingIds: [],
+      updatedProgress: null,
+    };
   }, [currentEpisodeIndex, seriesId]);
 
   /**
    * handleCheck - Quando usuário clica "Verificar"
    * 
-   * ★ FIX: NÃO abre modal automaticamente
-   *        Apenas salva os dados e aguarda usuário clicar "Próximo"
+   * NÃO abre modal automaticamente
+   * Apenas salva os dados e aguarda usuário clicar "Próximo"
    */
   const handleCheck = async (userText) => {
     if (!userText.trim() || !episode) return;
 
     const result = calculateDiff(episode.text, userText, episode.title);
-    setFeedback(result); // ← Mostra o diff para o aluno VER
+    setFeedback(result); // Mostra o diff para o aluno VER
 
     const storyProgress = progress?.storyProgress?.[seriesId] || {};
     const previousBest = storyProgress.scores?.[episode.id] || 0;
@@ -111,11 +135,11 @@ export default function EpisodePlayer({
       earnedDiamond: willEarnDiamond,
     });
 
-    // ★ FIX: Apenas marca qual celebração mostrar DEPOIS
-    //        NÃO abre o modal agora - usuário precisa ver o feedback primeiro
+    // Marca qual celebração mostrar DEPOIS
     setPendingCelebration(willEarnDiamond ? 'diamond' : 'episode');
 
     // Salva progresso em background
+    let updatedProgress = progress;
     if (onUpdateProgress) {
       try {
         const updateResult = await onUpdateProgress(
@@ -125,15 +149,33 @@ export default function EpisodePlayer({
           totalEpisodes
         );
         
-        if (updateResult?.newlyUnlocked?.length > 0) {
-          const achievementId = updateResult.newlyUnlocked[0];
-          const achievement = getAchievementById(achievementId);
-          setCurrentAchievement(achievement);
-          setAchievementIdToSave(achievementId);
+        // Pega progress atualizado
+        if (updateResult?.progress) {
+          updatedProgress = updateResult.progress;
         }
       } catch (e) {
         console.error('Erro ao salvar progresso:', e);
       }
+    }
+
+    // === SISTEMA ANTI-COLISÃO ===
+    // Detecta conquistas com prioridade
+    const { celebrate, newEarned, newPending } = processLessonComplete(
+      currentEarnedAchievements,
+      currentPendingAchievements,
+      updatedProgress
+    );
+
+    // Guarda para usar depois
+    celebrationDataRef.current = {
+      achievementToCelebrate: celebrate,
+      newEarnedIds: newEarned,
+      newPendingIds: newPending,
+      updatedProgress,
+    };
+
+    if (celebrate) {
+      setCurrentAchievement(celebrate);
     }
   };
 
@@ -141,20 +183,41 @@ export default function EpisodePlayer({
     setCelebrationPhase('episode');
   };
 
+  /**
+   * handleAchievementComplete - Achievement modal fechou
+   * Salva a conquista celebrada e as filas atualizadas
+   */
   const handleAchievementComplete = async () => {
-    if (achievementIdToSave && onCelebrateAchievement) {
+    const { achievementToCelebrate, newEarnedIds, newPendingIds } = celebrationDataRef.current;
+    
+    if (achievementToCelebrate && onCelebrateAchievement) {
       setSavingMessage('Registrando conquista...');
       setCelebrationPhase('saving');
       
-      await onCelebrateAchievement(achievementIdToSave);
+      try {
+        // Novo formato: passa objeto com todas as listas
+        await onCelebrateAchievement({
+          celebratedId: achievementToCelebrate.id,
+          newEarnedIds,
+          newPendingIds,
+        });
+      } catch (e) {
+        console.error('Erro ao registrar conquista:', e);
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 800));
     }
     
     playPopSound();
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
-    setAchievementIdToSave(null);
     setPendingCelebration(null);
+    celebrationDataRef.current = {
+      achievementToCelebrate: null,
+      newEarnedIds: [],
+      newPendingIds: [],
+      updatedProgress: null,
+    };
     
     if (!isLastEpisode) {
       setCurrentEpisodeIndex(prev => prev + 1);
@@ -168,21 +231,24 @@ export default function EpisodePlayer({
     setFeedback(null);
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
-    setAchievementIdToSave(null);
     setEpisodeModalData(null);
     setPendingCelebration(null);
+    celebrationDataRef.current = {
+      achievementToCelebrate: null,
+      newEarnedIds: [],
+      newPendingIds: [],
+      updatedProgress: null,
+    };
   };
 
   /**
    * handleNext - Usuário clica "Próximo Episódio" no DictationArea
-   * 
-   * ★ FIX: AGORA sim abre o modal de celebração
-   *        Usuário já viu o feedback, está pronto para continuar
+   * AGORA sim abre o modal de celebração
    */
   const handleNext = async () => {
     playPopSound();
     
-    // ★ FIX: Agora que usuário viu o feedback, mostra a celebração
+    // Agora que usuário viu o feedback, mostra a celebração
     if (pendingCelebration === 'diamond') {
       setCelebrationPhase('diamond');
       setPendingCelebration(null);
@@ -196,7 +262,8 @@ export default function EpisodePlayer({
     }
     
     // Se tem achievement pendente
-    if (currentAchievement && achievementIdToSave) {
+    const { achievementToCelebrate } = celebrationDataRef.current;
+    if (achievementToCelebrate) {
       setCelebrationPhase('achievement');
       return;
     }
@@ -215,7 +282,8 @@ export default function EpisodePlayer({
   const handleBackToSeries = () => {
     playPopSound();
     
-    if (currentAchievement && achievementIdToSave) {
+    const { achievementToCelebrate } = celebrationDataRef.current;
+    if (achievementToCelebrate) {
       setCelebrationPhase('achievement');
       return;
     }
@@ -229,7 +297,8 @@ export default function EpisodePlayer({
   const handleModalNext = () => {
     playPopSound();
     
-    if (currentAchievement && achievementIdToSave) {
+    const { achievementToCelebrate } = celebrationDataRef.current;
+    if (achievementToCelebrate) {
       setCelebrationPhase('achievement');
       return;
     }
@@ -248,7 +317,8 @@ export default function EpisodePlayer({
   const handleModalBackToSeries = () => {
     playPopSound();
     
-    if (currentAchievement && achievementIdToSave) {
+    const { achievementToCelebrate } = celebrationDataRef.current;
+    if (achievementToCelebrate) {
       setCelebrationPhase('achievement');
       return;
     }
@@ -263,9 +333,14 @@ export default function EpisodePlayer({
     setFeedback(null);
     setCelebrationPhase('dictation');
     setCurrentAchievement(null);
-    setAchievementIdToSave(null);
     setEpisodeModalData(null);
     setPendingCelebration(null);
+    celebrationDataRef.current = {
+      achievementToCelebrate: null,
+      newEarnedIds: [],
+      newPendingIds: [],
+      updatedProgress: null,
+    };
   };
 
   if (!series || !episode) {
@@ -424,7 +499,7 @@ export default function EpisodePlayer({
         <div className="h-20 md:h-8" />
       </main>
 
-      {/* ★ BLOQUEADOR DE CLIQUES - z-40 fica ABAIXO dos modals (z-50) */}
+      {/* BLOQUEADOR DE CLIQUES - z-40 fica ABAIXO dos modals (z-50) */}
       <AnimatePresence>
         {isModalActive && (
           <motion.div 
