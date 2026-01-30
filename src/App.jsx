@@ -13,10 +13,12 @@
  * 
  * UX FIXES:
  * - Scroll to top em mudança de seção
- * - Botão voltar do browser navega dentro do app
+ * - Botão voltar do browser navega dentro do app (listener único via ref)
+ * - Guard anti-duplo-clique no completeLevel
+ * - getNextLessonInfo memoizado
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { useProgress } from './hooks/useProgress';
@@ -64,6 +66,11 @@ function AppContent() {
   } = useProgress(user);
 
   // ============================================
+  // GUARD ANTI-DUPLO-CLIQUE no completeLevel
+  // ============================================
+  const completeGuardRef = useRef(false);
+
+  // ============================================
   // SCROLL TO TOP em mudança de seção
   // ============================================
   useEffect(() => {
@@ -71,9 +78,25 @@ function AppContent() {
   }, [currentSection, currentStorySection, isInLesson]);
 
   // ============================================
-  // BROWSER BACK BUTTON - Navega dentro do app
+  // BROWSER BACK BUTTON - Listener único via ref
   // ============================================
+  
+  // Ref que sempre tem o estado atual (evita re-registrar listener)
+  const navRef = useRef({
+    currentSection: 'home',
+    currentStorySection: 'hub',
+    isInLesson: false,
+  });
+
+  // Mantém ref sincronizado
+  useEffect(() => {
+    navRef.current = { currentSection, currentStorySection, isInLesson };
+  }, [currentSection, currentStorySection, isInLesson]);
+
+  // Função estável que lê do ref
   const getBackDestination = useCallback(() => {
+    const { currentSection, currentStorySection, isInLesson } = navRef.current;
+
     // Em lição → volta pro mapa
     if (isInLesson) return { type: 'exitLesson' };
     
@@ -98,16 +121,15 @@ function AppContent() {
     
     // Já está na home → não faz nada (deixa o browser sair se quiser)
     return null;
-  }, [currentSection, currentStorySection, isInLesson]);
+  }, []);
 
+  // Listener único - só registra 1x
   useEffect(() => {
-    // Push state inicial
     const pushState = () => {
       window.history.pushState({ app: true }, '');
     };
 
-    // Handler do botão voltar
-    const handlePopState = (e) => {
+    const handlePopState = () => {
       const destination = getBackDestination();
       
       if (!destination) {
@@ -135,7 +157,7 @@ function AppContent() {
       }
     };
 
-    // Setup inicial
+    // Setup inicial - só 1x
     pushState();
     window.addEventListener('popstate', handlePopState);
 
@@ -151,8 +173,10 @@ function AppContent() {
     plan: 'Pro',
   };
 
-  // Encontra próxima lição disponível
-  const getNextLessonInfo = () => {
+  // ============================================
+  // PRÓXIMA LIÇÃO - Memoizado
+  // ============================================
+  const nextLessonInfo = useMemo(() => {
     const mapData = getMapData(currentMapId);
     if (!mapData) return { title: 'Tudo completo!', module: 'Parabéns!', theme: '' };
     
@@ -178,7 +202,7 @@ function AppContent() {
       }
     }
     return { title: 'Tudo completo!', module: 'Parabéns!', theme: '' };
-  };
+  }, [currentMapId, progress, getNodeState, getNextLevel, getNodeProgress]);
 
   // Inicia lição de um node específico (usa mapa atual)
   const startNodeLesson = (nodeId) => {
@@ -210,7 +234,9 @@ function AppContent() {
     );
   }
 
-  // Tela de Lição (fullscreen)
+  // ============================================
+  // TELA DE LIÇÃO (fullscreen)
+  // ============================================
   if (isInLesson && currentLesson) {
     const { nodeId, mapId, node, level, currentRound } = currentLesson;
     
@@ -229,12 +255,25 @@ function AppContent() {
           totalRounds: 3,
         }}
         onComplete={async (result) => {
-          const { newlyUnlocked } = await completeLevel(mapId, nodeId, level.id, {
-            accuracy: result.accuracy || 0,
-            xpEarned: result.xp || 0,
-            earnedDiamond: result.earnedDiamond || false,
-          });
-          return { newlyUnlocked };
+          // Guard anti-duplo-clique
+          if (completeGuardRef.current) {
+            return { newlyUnlocked: [] };
+          }
+          completeGuardRef.current = true;
+
+          try {
+            const { newlyUnlocked } = await completeLevel(mapId, nodeId, level.id, {
+              accuracy: result.accuracy || 0,
+              xpEarned: result.xp || 0,
+              earnedDiamond: result.earnedDiamond || false,
+            });
+            return { newlyUnlocked: newlyUnlocked || [] };
+          } catch (err) {
+            console.error('completeLevel failed:', err);
+            return { newlyUnlocked: [] };
+          } finally {
+            completeGuardRef.current = false;
+          }
         }}
         onCelebrateAchievement={celebrateAchievement}
         onExit={() => {
@@ -257,9 +296,8 @@ function AppContent() {
 
   // Iniciar lição da home
   const handleStartLesson = () => {
-    const next = getNextLessonInfo();
-    if (next.node && next.level) {
-      startNodeLesson(next.nodeId);
+    if (nextLessonInfo.node && nextLessonInfo.level) {
+      startNodeLesson(nextLessonInfo.nodeId);
     } else {
       setCurrentSection('map');
     }
@@ -293,12 +331,13 @@ function AppContent() {
   if (currentSection === 'adventure') {
     return (
       <WorldSelect
+        progress={progress}
         onSelectWorld={(mapId) => {
-          setCurrentMapId(mapId);
-          setCurrentSection('map');
-        }}
-        onBack={() => setCurrentSection('home')}
-      />
+        setCurrentMapId(mapId);
+        setCurrentSection('map');
+  }}
+  onBack={() => setCurrentSection('home')}
+/>
     );
   }
 
@@ -349,13 +388,14 @@ function AppContent() {
       onLogout={logout}
     >
       {currentSection === 'home' && (
-        <HomeScreen
-          user={userData}
-          progress={progress}
-          nextLesson={getNextLessonInfo()}
-          onStartLesson={handleStartLesson}
-          onNavigate={handleNavigate}
-        />
+    <HomeScreen
+        user={userData}
+        progress={progress}
+        nextLesson={nextLessonInfo}
+        onStartLesson={handleStartLesson}
+        onNavigate={handleNavigate}
+        currentMapId={currentMapId}
+      />
       )}
 
       {currentSection === 'stats' && <StatsScreen />}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAchievementById } from '../../data/achievementsData';
 
 /**
@@ -83,9 +83,18 @@ export function useAchievementQueue(userId) {
   const [queue, setQueue] = useState([]);
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  
+  // Session gate: impede mais de 1 modal por sessão de atividade
+  const shownThisSessionRef = useRef(false);
 
-  // Carrega fila do localStorage
+  // Reset estado E carrega fila quando userId muda
   useEffect(() => {
+    // Reset completo ao trocar usuário (evita vazamento)
+    setQueue([]);
+    setCurrentAchievement(null);
+    setIsReady(false);
+    shownThisSessionRef.current = false;
+
     if (!userId) return;
     
     try {
@@ -115,6 +124,13 @@ export function useAchievementQueue(userId) {
   }, [userId]);
 
   /**
+   * Reseta o gate de sessão (chamar ao iniciar nova atividade)
+   */
+  const resetSessionGate = useCallback(() => {
+    shownThisSessionRef.current = false;
+  }, []);
+
+  /**
    * Adiciona conquistas à fila
    * @param {string[]} achievementIds - Array de IDs de conquistas
    * @returns {Object|null} - Conquista para mostrar AGORA (se houver) ou null
@@ -130,20 +146,34 @@ export function useAchievementQueue(userId) {
     // Ordena por prioridade
     const sorted = showable.sort((a, b) => getPriority(b) - getPriority(a));
     
-    // A mais importante aparece AGORA
-    const toShowNow = sorted[0];
-    const toQueue = sorted.slice(1);
-    
-    // Adiciona o resto na fila
-    if (toQueue.length > 0) {
+    // Session gate: já mostrou nesta sessão? Enfileira tudo
+    if (shownThisSessionRef.current) {
       setQueue(prev => {
-        const newQueue = [...prev, ...toQueue];
+        const newQueue = [...prev, ...sorted];
         // Remove duplicatas e ordena
         const unique = [...new Set(newQueue)].sort((a, b) => getPriority(b) - getPriority(a));
         saveQueue(unique);
         return unique;
       });
+      return null;
     }
+    
+    // Marca que já mostrou nesta sessão
+    shownThisSessionRef.current = true;
+    
+    // A mais importante aparece AGORA
+    const toShowNow = sorted[0];
+    const toQueue = sorted.slice(1);
+    
+    // Adiciona o resto na fila (removendo também toShowNow se já estava na fila)
+    setQueue(prev => {
+      const filteredPrev = prev.filter(id => id !== toShowNow);
+      const newQueue = [...filteredPrev, ...toQueue];
+      // Remove duplicatas e ordena
+      const unique = [...new Set(newQueue)].sort((a, b) => getPriority(b) - getPriority(a));
+      saveQueue(unique);
+      return unique;
+    });
     
     // Retorna a conquista para mostrar agora
     const achievement = getAchievementById(toShowNow);
@@ -203,6 +233,7 @@ export function useAchievementQueue(userId) {
   const clearQueue = useCallback(() => {
     setQueue([]);
     setCurrentAchievement(null);
+    shownThisSessionRef.current = false;
     if (userId) {
       localStorage.removeItem(`${STORAGE_KEY}_${userId}`);
     }
@@ -220,6 +251,7 @@ export function useAchievementQueue(userId) {
     markAsShown,
     canShowFromQueue,
     clearQueue,
+    resetSessionGate,
     
     // Utils
     isSilent: (id) => SILENT_ACHIEVEMENTS.includes(id),

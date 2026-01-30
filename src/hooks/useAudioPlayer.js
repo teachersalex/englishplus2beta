@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
  * useAudioPlayer
  * Hook reutilizável para controle de áudio
  * Responsabilidade única: gerenciar estado e controles de reprodução
+ * 
+ * FIX: isPlaying agora sincroniza com eventos reais do <audio>
  */
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5];
@@ -18,12 +20,33 @@ export function useAudioPlayer(audioSrc) {
   // Reset quando muda a source
   useEffect(() => {
     setProgress(0);
+    setDuration(0); // Reset duration também
     setIsPlaying(false);
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.pause();
     }
   }, [audioSrc]);
+
+  // Sincroniza isPlaying com eventos reais do <audio>
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onEnded = () => setIsPlaying(false);
+
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('ended', onEnded);
+
+    return () => {
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, []);
 
   // Sincroniza playback rate
   useEffect(() => {

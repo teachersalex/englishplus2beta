@@ -106,13 +106,16 @@ export const node4Data = {
           feedback: { success: { title: 'Excelente!', text: 'A, E, I, O, U são vogais!' } }
         },
         {
-          type: 'fill_gap',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Sequência final',
-          instruction: 'Qual letra vem depois?',
-          sentence: 'X, Y, __',
-          correct: 'Z',
-          options: ['Z', 'W', 'A'],
+          instruction: 'Qual letra vem depois de X, Y?',
+          question: 'X, Y, ___',
+          options: [
+            { text: 'Z', correct: true },
+            { text: 'W', correct: false },
+            { text: 'A', correct: false },
+          ],
           feedback: { success: { title: 'Isso!', text: 'Z é a última letra!' } }
         },
         {
@@ -145,12 +148,16 @@ export const node4Data = {
       color: '#ffd700',
       activities: [
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Desafio',
           title: 'Soletrar BRAZIL',
-          instruction: 'Soletre o nome do seu país',
-          words: ['B', 'R', 'A', 'Z', 'I', 'L'],
-          correct: 'B R A Z I L',
+          instruction: 'Como se soletra "Brazil" em inglês?',
+          question: 'Soletrar: B-R-A-Z-I-L',
+          options: [
+            { text: 'Bi - Ar - Ei - Zi - Ai - Él', correct: true },
+            { text: 'Bê - Erre - A - Zê - I - Ele', correct: false },
+            { text: 'Be - Re - A - Ze - I - Le', correct: false },
+          ],
           feedback: { success: { title: 'Perfeito!', text: 'Bi-Ar-Ei-Zi-Ai-Él = BRAZIL' } }
         },
         {
@@ -186,12 +193,16 @@ export const node4Data = {
           feedback: { success: { title: 'Perfeito!', text: 'Agora você sabe soletrar nomes!' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Fechamento',
           title: 'Soletrar USA',
-          instruction: 'Soletre a sigla dos Estados Unidos',
-          words: ['U', 'S', 'A'],
-          correct: 'U S A',
+          instruction: 'Como se soletra "USA" em inglês?',
+          question: 'Soletrar: U-S-A',
+          options: [
+            { text: 'Iu - Éss - Ei', correct: true },
+            { text: 'U - Esse - A', correct: false },
+            { text: 'Ú - S - Á', correct: false },
+          ],
           feedback: { success: { title: 'Excelente!', text: 'Iu-Éss-Ei = USA!' } }
         }
       ]

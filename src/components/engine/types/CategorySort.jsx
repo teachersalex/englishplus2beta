@@ -47,8 +47,7 @@ export function CategorySort({ data, onComplete }) {
       setSelected(null);
 
       if (bank.length === 1) {
-        engine.setShowResult(true);
-        engine.setIsCorrect(true);
+        engine.verify(true);
       }
     } else {
       setWrongItem(selected.id);

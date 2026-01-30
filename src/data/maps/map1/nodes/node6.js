@@ -1,187 +1,201 @@
 /**
- * Node 6: O Rio e a Vila
- * Tema: There is / There are
+ * Node 6: As Ferramentas
+ * Tema: Classroom Language
  */
 export const node6Data = {
   id: 6,
-  title: 'O Rio e a Vila',
-  theme: 'There is / There are',
-  lore: 'Você chega na vila. O que existe aqui? Aprenda a descrever lugares.',
-  tip: '"There is" para singular, "There are" para plural. Simples assim.',
+  title: 'As Ferramentas',
+  theme: 'Classroom Language',
+  lore: 'O guia te entrega um manual. Você precisa entender as instruções para sobreviver aqui.',
+  tip: 'Estes são os verbos que o App vai usar com você. Aprenda "Listen" (Ouvir) e "Read" (Ler).',
   
   levels: [
     {
-      id: '1_6_bronze',
-      title: 'O Que Existe',
+      id: '0_6_bronze',
+      title: 'Inputs',
       color: '#cd7f32',
       activities: [
         {
           type: 'vocab_match',
           label: 'Aquecimento',
-          title: 'Lugares',
-          instruction: 'Conecte',
+          title: 'Recebendo informação',
+          instruction: 'Conecte português ↔ inglês',
           pairs: [
-            { portuguese: 'Igreja', english: 'Church' },
-            { portuguese: 'Banco', english: 'Bank' },
-            { portuguese: 'Restaurante', english: 'Restaurant' },
-            { portuguese: 'Parque', english: 'Park' },
+            { portuguese: 'Ouvir', english: 'Listen' },
+            { portuguese: 'Ler', english: 'Read' },
           ],
-          feedback: { success: { title: 'Perfeito!', text: 'Vocabulário de cidade!' } }
-        },
-        {
-          type: 'fill_gap',
-          label: 'Introdução',
-          title: 'Singular',
-          instruction: 'Complete',
-          sentence: 'There ___ a bank here.',
-          correct: 'is',
-          options: ['is', 'are', 'have'],
-          feedback: { success: { title: 'There is!', text: 'Um banco = singular = IS.' } }
-        },
-        {
-          type: 'fill_gap',
-          label: 'Prática',
-          title: 'Plural',
-          instruction: 'Complete',
-          sentence: 'There ___ many people.',
-          correct: 'are',
-          options: ['is', 'are', 'has'],
-          feedback: { success: { title: 'There are!', text: 'Muitas pessoas = plural = ARE.' } }
+          feedback: { success: { title: 'Muito bem!', text: 'Essas são as ações de RECEBER informação.' } }
         },
         {
           type: 'true_false',
           label: 'Prática',
-          title: 'Certo ou errado?',
-          instruction: 'Analise',
-          statement: 'There is a church in my city.',
-          correct: true,
-          feedback: { success: { title: 'Correto!', text: 'Uma igreja = There is.' } }
+          title: 'Verdadeiro ou Falso?',
+          instruction: 'Analise a afirmação',
+          statement: '"Listen" significa falar.',
+          correct: false,
+          feedback: { success: { title: 'Correto!', text: '"Listen" é ouvir, não falar!' } }
         },
         {
           type: 'multiple_choice',
-          label: 'Fechamento',
-          title: 'Traduza',
-          instruction: 'Há muitos carros.',
-          question: 'Há muitos carros.',
+          label: 'Prática',
+          title: 'Ícone mental',
+          instruction: 'Qual ícone combina com "Listen"?',
+          question: '"Listen" combina com qual imagem?',
           options: [
-            { text: 'There is many cars.', correct: false },
-            { text: 'There are many cars.', correct: true },
-            { text: 'Have many cars.', correct: false },
+            { text: 'Orelha', correct: true },
+            { text: 'Boca', correct: false },
+            { text: 'Mão', correct: false },
           ],
-          feedback: { success: { title: 'There ARE!', text: 'Carros = plural.' } }
+          feedback: { success: { title: 'Isso!', text: 'Listen = Orelha. Ouvir!' } }
+        },
+        {
+          type: 'multiple_choice',
+          label: 'Prática',
+          title: 'Contexto',
+          instruction: 'O que você faz com um livro?',
+          question: 'Com um livro, você:',
+          options: [
+            { text: 'Read', correct: true },
+            { text: 'Listen', correct: false },
+            { text: 'Speak', correct: false },
+          ],
+          feedback: { success: { title: 'Perfeito!', text: 'Livro = Read (Ler).' } }
+        },
+        {
+          type: 'fill_gap',
+          label: 'Fechamento',
+          title: 'Complete',
+          instruction: 'Preencha a lacuna',
+          sentence: '___ to the audio.',
+          correct: 'Listen',
+          options: ['Listen', 'Read', 'Write'],
+          feedback: { success: { title: 'Ótimo!', text: 'Listen to the audio = Ouça o áudio.' } }
         }
       ]
     },
     {
-      id: '1_6_silver',
-      title: 'Descrevendo',
+      id: '0_6_silver',
+      title: 'Outputs',
       color: '#c0c0c0',
       activities: [
         {
-          type: 'sentence_builder',
+          type: 'vocab_match',
           label: 'Aquecimento',
-          title: 'Há um rio',
-          instruction: '"Há um rio perto da vila."',
-          words: ['There', 'is', 'a', 'river', 'near', 'the', 'village.'],
-          correct: 'There is a river near the village.',
-          feedback: { success: { title: 'Ótimo!', text: 'Descrição perfeita!' } }
-        },
-        {
-          type: 'fill_gap',
-          label: 'Introdução',
-          title: 'Negativa singular',
-          instruction: 'Complete',
-          sentence: 'There ___ not a hospital here.',
-          correct: 'is',
-          options: ['is', 'are', 'do'],
-          feedback: { success: { title: 'There is not!', text: 'Ou "There isn\'t".' } }
-        },
-        {
-          type: 'error_detective',
-          label: 'Prática',
-          title: 'Erro comum',
-          instruction: 'Ache o erro',
-          sentence: 'There has a problem.',
-          errorWord: 'has',
-          correction: 'is',
-          feedback: { success: { title: 'There IS!', text: 'Para existência, use "There is", não "has".' } }
-        },
-        {
-          type: 'sentence_builder',
-          label: 'Prática',
-          title: 'Negativa plural',
-          instruction: '"Não há ônibus aqui."',
-          words: ['There', 'are', 'no', 'buses', 'here.'],
-          correct: 'There are no buses here.',
-          feedback: { success: { title: 'Perfeito!', text: '"No" também funciona para negar.' } }
+          title: 'Produzindo informação',
+          instruction: 'Conecte português ↔ inglês',
+          pairs: [
+            { portuguese: 'Falar', english: 'Speak' },
+            { portuguese: 'Escrever', english: 'Write' },
+          ],
+          feedback: { success: { title: 'Excelente!', text: 'Essas são as ações de PRODUZIR informação.' } }
         },
         {
           type: 'multiple_choice',
-          label: 'Fechamento',
-          title: 'Pergunta',
-          instruction: 'Complete:',
-          question: '___ there a bank near here?',
+          label: 'Prática',
+          title: 'Ícone mental',
+          instruction: 'Qual ícone combina com "Write"?',
+          question: '"Write" combina com qual imagem?',
           options: [
-            { text: 'Is', correct: true },
-            { text: 'Are', correct: false },
-            { text: 'Do', correct: false },
+            { text: 'Lápis', correct: true },
+            { text: 'Orelha', correct: false },
+            { text: 'Olho', correct: false },
           ],
-          feedback: { success: { title: 'Is there?', text: 'Pergunta inverte: Is there...?' } }
+          feedback: { success: { title: 'Isso!', text: 'Write = Lápis. Escrever!' } }
+        },
+        {
+          type: 'true_false',
+          label: 'Prática',
+          title: 'Verdadeiro ou Falso?',
+          instruction: 'Analise a afirmação',
+          statement: '"Speak" é usar a voz.',
+          correct: true,
+          feedback: { success: { title: 'Correto!', text: 'Speak = Falar = Usar a voz!' } }
+        },
+        {
+          type: 'fill_gap',
+          label: 'Prática',
+          title: 'Complete a frase',
+          instruction: 'Preencha a lacuna',
+          sentence: 'I ___ English.',
+          correct: 'speak',
+          options: ['speak', 'listen', 'read'],
+          feedback: { success: { title: 'Perfeito!', text: 'I speak English = Eu falo inglês.' } }
+        },
+        {
+          type: 'category_sort',
+          label: 'Fechamento',
+          title: 'Receber vs Produzir',
+          instruction: 'Classifique os verbos',
+          categories: [
+            { id: 'receber', name: 'Receber (Input)' },
+            { id: 'produzir', name: 'Produzir (Output)' }
+          ],
+          items: [
+            { id: 1, text: 'Listen', category: 'receber' },
+            { id: 2, text: 'Read', category: 'receber' },
+            { id: 3, text: 'Speak', category: 'produzir' },
+            { id: 4, text: 'Write', category: 'produzir' }
+          ],
+          feedback: { success: { title: 'Excelente!', text: 'Você entende como a comunicação funciona!' } }
         }
       ]
     },
     {
-      id: '1_6_gold',
-      title: 'A Vila Completa',
+      id: '0_6_gold',
+      title: 'A Ação',
       color: '#ffd700',
       activities: [
         {
-          type: 'error_detective',
+          type: 'sentence_builder',
           label: 'Desafio',
-          title: 'Erro fatal',
-          instruction: 'Ache o erro',
-          sentence: 'There is many students.',
-          errorWord: 'is',
-          correction: 'are',
-          feedback: { success: { title: 'There ARE!', text: 'Many students = plural.' } }
+          title: 'Comando duplo',
+          instruction: '"Ouça e repita."',
+          words: ['Listen', 'and', 'repeat.'],
+          correct: 'Listen and repeat.',
+          feedback: { success: { title: 'Excelente!', text: '"Ouça e repita" - O comando mais comum!' } }
         },
         {
-          type: 'fill_gap',
-          label: 'Desafio',
-          title: 'Pergunta plural',
-          instruction: 'Complete',
-          sentence: '___ there any restaurants?',
-          correct: 'Are',
-          options: ['Is', 'Are', 'Do'],
-          feedback: { success: { title: 'Are there?', text: 'Restaurants = plural.' } }
+          type: 'vocab_match',
+          label: 'Prática',
+          title: 'Novo verbo',
+          instruction: 'Conecte',
+          pairs: [
+            { portuguese: 'Repetir', english: 'Repeat' },
+            { portuguese: 'Abrir', english: 'Open' },
+          ],
+          feedback: { success: { title: 'Ótimo!', text: 'Mais comandos de sala de aula!' } }
         },
         {
           type: 'sentence_builder',
           label: 'Prática',
-          title: 'Frase complexa',
-          instruction: '"Há um parque e há muitas árvores."',
-          words: ['There', 'is', 'a', 'park', 'and', 'there', 'are', 'many', 'trees.'],
-          correct: 'There is a park and there are many trees.',
-          feedback: { success: { title: 'Mestre!', text: 'Singular e plural na mesma frase.' } }
+          title: 'Outro comando',
+          instruction: '"Leia e escreva."',
+          words: ['Read', 'and', 'write.'],
+          correct: 'Read and write.',
+          feedback: { success: { title: 'Perfeito!', text: '"Leia e escreva".' } }
         },
         {
           type: 'error_detective',
           label: 'Desafio',
-          title: 'Tradução errada',
-          instruction: 'Ache o erro',
-          sentence: 'There has a bank here.',
-          errorWord: 'has',
-          correction: 'is',
-          feedback: { success: { title: 'There IS!', text: 'Para existência, use "There is", não "has".' } }
+          title: 'Encontre o erro',
+          instruction: 'Qual palavra está errada?',
+          sentence: 'Listens to the teacher.',
+          errorWord: 'Listens',
+          correction: 'Listen',
+          feedback: { success: { title: 'Excelente!', text: 'Comandos usam o verbo na forma base: "Listen", não "Listens".' } }
         },
         {
-          type: 'true_false',
+          type: 'multiple_choice',
           label: 'Fechamento',
-          title: 'Gramática',
-          instruction: 'Analise',
-          statement: 'There are a book on the table.',
-          correct: false,
-          feedback: { success: { title: 'Falso!', text: 'A book = singular. O correto é "There is a book".' } }
+          title: 'Comando do professor',
+          instruction: 'O professor diz "Open your book". Você:',
+          question: '"Open your book" significa:',
+          options: [
+            { text: 'Abre o livro', correct: true },
+            { text: 'Fecha o livro', correct: false },
+            { text: 'Lê o livro', correct: false },
+          ],
+          feedback: { success: { title: 'Muito bem!', text: 'Open = Abrir. Agora você entende o professor!' } }
         }
       ]
     }

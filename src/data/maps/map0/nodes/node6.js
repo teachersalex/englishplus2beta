@@ -66,9 +66,9 @@ export const node6Data = {
           label: 'Fechamento',
           title: 'Complete',
           instruction: 'Preencha a lacuna',
-          sentence: '___ten to the audio.',
-          correct: 'Lis',
-          options: ['Lis', 'Rea', 'Wri'],
+          sentence: '___ to the audio.',
+          correct: 'Listen',
+          options: ['Listen', 'Read', 'Write'],
           feedback: { success: { title: 'Ótimo!', text: 'Listen to the audio = Ouça o áudio.' } }
         }
       ]

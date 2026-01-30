@@ -177,10 +177,10 @@ export const node5Data = {
           label: 'Desafio',
           title: 'Erro comum',
           instruction: 'Qual palavra está errada?',
-          sentence: 'I sorry you.',
-          errorWord: 'you',
+          sentence: 'I is sorry.',
+          errorWord: 'is',
           correction: 'am',
-          feedback: { success: { title: 'Ótimo!', text: 'O certo é "I am sorry" ou só "Sorry".' } }
+          feedback: { success: { title: 'Ótimo!', text: 'O certo é "I am sorry". "I" sempre usa "am".' } }
         },
         {
           type: 'multiple_choice',

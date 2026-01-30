@@ -112,10 +112,10 @@ export const node7Data = {
           label: 'Prática',
           title: 'Erro comum',
           instruction: 'Ache o erro',
-          sentence: 'I not can swim.',
-          errorWord: 'not',
-          correction: "can't",
-          feedback: { success: { title: "Can't!", text: 'A negativa é "can\'t" ou "cannot", não "not can".' } }
+          sentence: "He can't swims.",
+          errorWord: 'swims',
+          correction: 'swim',
+          feedback: { success: { title: 'Swim!', text: 'Após "can" ou "can\'t", o verbo fica na forma base: "can\'t swim", sem S.' } }
         },
         {
           type: 'multiple_choice',

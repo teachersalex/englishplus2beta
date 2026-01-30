@@ -9,6 +9,7 @@ class TypingSoundEngine {
     this.enabled = true
     this.isLoading = false
     this.initialized = false
+    this.lastPlayTs = 0 // Throttle para digitação rápida
   }
 
   async init() {
@@ -42,11 +43,16 @@ class TypingSoundEngine {
   }
 
   play() {
+    // Throttle: máximo 1 som a cada 35ms (evita sobrecarga em digitação rápida)
+    const now = performance.now()
+    if (now - this.lastPlayTs < 35) return
+    this.lastPlayTs = now
+
     if (!this.enabled || !this.audioContext || !this.audioBuffer) return
     
     // Resume se estiver suspenso (política de autoplay)
     if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume()
+      this.audioContext.resume().catch(() => {})
     }
 
     // Cria source

@@ -28,12 +28,16 @@ export const node7Data = {
           feedback: { success: { title: 'Muito bem!', text: 'Os três primeiros números!' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Sequência',
-          instruction: 'Conte: "1, 2, 3"',
-          words: ['One', 'Two', 'Three'],
-          correct: 'One Two Three',
+          instruction: 'Qual é a ordem correta?',
+          question: 'Conte de 1 a 3:',
+          options: [
+            { text: 'One, Two, Three', correct: true },
+            { text: 'One, Three, Two', correct: false },
+            { text: 'Two, One, Three', correct: false },
+          ],
           feedback: { success: { title: 'Isso!', text: '1, 2, 3 em inglês!' } }
         },
         {
@@ -102,12 +106,16 @@ export const node7Data = {
           feedback: { success: { title: 'Isso!', text: '2 + 2 = 4. Four!' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Sequência',
-          instruction: 'Conte: "4, 5, 6"',
-          words: ['Four', 'Five', 'Six'],
-          correct: 'Four Five Six',
+          instruction: 'Qual é a ordem correta?',
+          question: 'Conte de 4 a 6:',
+          options: [
+            { text: 'Four, Five, Six', correct: true },
+            { text: 'Four, Six, Five', correct: false },
+            { text: 'Five, Four, Six', correct: false },
+          ],
           feedback: { success: { title: 'Perfeito!', text: '4, 5, 6!' } }
         },
         {

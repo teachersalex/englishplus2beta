@@ -9,7 +9,13 @@ import { EngineOverlay } from '../EngineOverlay';
 import { EngineHeader } from '../EngineHeader';
 
 function normalizeForComparison(str) {
-  return str.trim().replace(/\s+/g, ' ').replace(/[""]/g, '"').replace(/['']/g, "'").toLowerCase();
+  return str
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/\s+([?.!,;:])/g, '$1') // remove espaço antes de pontuação
+    .toLowerCase();
 }
 
 /**

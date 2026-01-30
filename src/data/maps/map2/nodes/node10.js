@@ -164,11 +164,11 @@ export const node10Data = {
           type: 'fill_gap',
           label: 'Desafio',
           title: 'De quem?',
-          instruction: 'Complete a pergunta.',
+          instruction: 'A bolsa está na sua mão (PERTO). Complete:',
           sentence: 'Whose bag is ___?',
           correct: 'this',
-          options: ['this', 'that', 'these'],
-          feedback: { success: { title: 'Perfeito!', text: 'De quem é esta bolsa?' } }
+          options: ['this', 'that', 'those'],
+          feedback: { success: { title: 'THIS!', text: 'Perto + singular = This. De quem é esta bolsa?' } }
         },
         {
           type: 'true_false',

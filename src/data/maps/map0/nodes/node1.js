@@ -53,12 +53,12 @@ export const node1Data = {
         {
           type: 'fill_gap',
           label: 'Prática',
-          title: 'Complete a palavra',
+          title: 'Complete',
           instruction: 'Preencha a lacuna',
-          sentence: 'H__lo',
-          correct: 'el',
-          options: ['el', 'al', 'ol'],
-          feedback: { success: { title: 'Perfeito!', text: 'Hello - sua primeira palavra.' } }
+          sentence: '___, my friend!',
+          correct: 'Hello',
+          options: ['Hello', 'Goodbye', 'Sorry'],
+          feedback: { success: { title: 'Perfeito!', text: 'Hello = Olá. Sua primeira palavra!' } }
         },
         {
           type: 'sentence_builder',

@@ -2,14 +2,22 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, GRADIENTS, SHADOWS } from '../../tokens';
 import { TIPS, FireIcon } from './homeData';
-import { getVisibleAchievements, getAchievementStats } from '../../data/achievementsData';
+import { 
+  getVisibleAchievements, 
+  getAchievementStats,
+  getAchievementIcon,
+} from '../../data/achievementsData';
 import AchievementGrid from '../achievements/AchievementGrid';
 
 /**
  * HomeScreen - EnglishPlus 2.0
  *
- * "Ali, tudo é ordem e perfeição. Luxo, calma, e sensação.
+ * "Ali, tudo é ordem e perfeição. Luxo, calma, e sensação."
  *  — Charles Baudelaire
+ * 
+ * CONQUISTAS:
+ * - Mostra apenas conquistas do mapa atual + globais relevantes
+ * - Escalonamento de dopamina: M0 muita, M3+ pouca
  */
 
 export default function HomeScreen({
@@ -17,9 +25,14 @@ export default function HomeScreen({
   progress = {},
   nextLesson,
   onNavigate,
+  currentMapId = 0, // Mapa atual do usuário
 }) {
   const [selectedAchievement, setSelectedAchievement] = useState(null);
-  const tip = TIPS[Math.floor(Date.now() / 86400000) % TIPS.length];
+  
+  // Dica do dia baseada no dia LOCAL
+  const now = new Date();
+  const localDay = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
+  const tip = TIPS[localDay % TIPS.length];
 
   const xpPerLevel = 500;
   const currentLevel = progress?.level || 1;
@@ -28,10 +41,11 @@ export default function HomeScreen({
   const xpPercent = Math.round((xpInLevel / xpPerLevel) * 100);
   const firstName = user?.name?.split(' ')[0] || 'Aluno';
   const streak = progress?.streak || 0;
+  const diamonds = progress?.diamonds || 0;
 
-  // Achievement system
+  // Achievement system - NOVO: filtrado por mapa
   const earnedAchievements = progress?.earnedAchievements || [];
-  const visibleAchievements = getVisibleAchievements(earnedAchievements);
+  const visibleAchievements = getVisibleAchievements(currentMapId, earnedAchievements, progress);
   const stats = getAchievementStats(earnedAchievements);
 
   return (
@@ -58,14 +72,27 @@ export default function HomeScreen({
             </p>
           </div>
 
-          <motion.div 
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-1.5 mt-2"
-          >
-            <FireIcon className="w-7 h-7" />
-            <span className="text-2xl font-bold text-amber-500">{streak}</span>
-          </motion.div>
+          {/* Streak + Diamantes */}
+          <div className="flex items-center gap-4">
+            <motion.div 
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-1.5"
+            >
+              <span className="text-xl">💎</span>
+              <span className="text-xl font-bold text-cyan-400">{diamonds}</span>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              className="flex items-center gap-1.5"
+            >
+              <FireIcon className="w-7 h-7" />
+              <span className="text-2xl font-bold text-amber-500">{streak}</span>
+            </motion.div>
+          </div>
         </header>
 
         {/* CARD PRINCIPAL — Meu Progresso + Minhas Conquistas */}
@@ -139,24 +166,31 @@ export default function HomeScreen({
               </div>
             </div>
 
-            {/* MINHAS CONQUISTAS - Agora com imagens PNG */}
+            {/* MINHAS CONQUISTAS */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: COLORS.textDark }}>
                   Minhas Conquistas
                 </h2>
                 <span className="text-sm" style={{ color: COLORS.textMuted }}>
-                  {stats.visible}/{stats.visibleTotal}
+                  {stats.earned}/{stats.total} ({stats.percent}%)
                 </span>
               </div>
 
-              {/* NOVO: Usando AchievementGrid com imagens */}
+              {/* Grid de conquistas - agora filtrado por mapa */}
               <AchievementGrid
                 achievements={visibleAchievements}
                 earnedAchievements={earnedAchievements}
                 progress={progress}
                 onSelectAchievement={setSelectedAchievement}
               />
+              
+              {/* Hint se não tem todas visíveis */}
+              {visibleAchievements.length < stats.total && (
+                <p className="text-xs text-center mt-3" style={{ color: COLORS.textMuted }}>
+                  Mais conquistas serão reveladas conforme você avança
+                </p>
+              )}
             </div>
           </div>
         </motion.section>
@@ -349,7 +383,7 @@ export default function HomeScreen({
         <div className="h-24 md:h-0" />
       </div>
 
-      {/* Modal de Conquista - Atualizado para imagens */}
+      {/* Modal de Conquista */}
       <AnimatePresence>
         {selectedAchievement && (
           <motion.div
@@ -378,25 +412,17 @@ export default function HomeScreen({
               {(() => {
                 const a = selectedAchievement;
                 const earned = earnedAchievements.includes(a.id);
-                const currentValue = a.getValue(progress);
-                const percent = Math.min(100, Math.round((currentValue / a.target) * 100));
-                
-                // Mapeamento de ícones
-                const iconMap = {
-                  lesson1: 'shield', node1: 'castle', lesson6: 'book',
-                  node3: 'map', perfect5: 'target', node5: 'globe',
-                  story1: 'music', xp500: 'bolt', level5: 'rocket',
-                  diamond10: 'diamond', node7: 'mountain', node10: 'star',
-                  master: 'trophy',
-                };
-                const iconName = iconMap[a.id] || 'shield';
+                const currentValue = Number(a.getValue?.(progress) ?? 0);
+                const target = Number(a.target ?? 1);
+                const percent = target > 0 ? Math.min(100, Math.round((currentValue / target) * 100)) : 0;
+                const iconPath = getAchievementIcon(a.id);
 
                 return (
                   <div className="relative z-10">
                     {/* Imagem do ícone */}
                     <div className="mb-4 flex justify-center">
                       <img
-                        src={`/achievements/${iconName}.png`}
+                        src={iconPath}
                         alt={a.title}
                         className="w-24 h-24 object-contain"
                         style={{ 
@@ -413,10 +439,17 @@ export default function HomeScreen({
                       {a.desc}
                     </p>
 
+                    {/* Quote (se conquistado) */}
+                    {earned && a.quote && (
+                      <p className="text-xs italic mb-4" style={{ color: COLORS.textMuted }}>
+                        "{a.quote}"
+                      </p>
+                    )}
+
                     <div className="mb-4">
                       <div className="flex justify-between text-xs mb-1" style={{ color: COLORS.textMuted }}>
                         <span>{currentValue}</span>
-                        <span>{a.target}</span>
+                        <span>{target}</span>
                       </div>
                       <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: COLORS.border }}>
                         <motion.div
@@ -435,7 +468,7 @@ export default function HomeScreen({
                       className="text-sm font-semibold mb-4"
                       style={{ color: earned ? COLORS.success : COLORS.primary }}
                     >
-                      {earned ? 'Conquistado!' : `${percent}% completo`}
+                      {earned ? '✓ Conquistado!' : `${percent}% completo`}
                     </p>
 
                     <button

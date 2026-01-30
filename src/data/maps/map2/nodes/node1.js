@@ -40,12 +40,12 @@ export const node1Data = {
         {
           type: 'fill_gap',
           label: 'Prática',
-          title: 'Complete a palavra',
+          title: 'Complete a frase',
           instruction: 'Preencha a lacuna',
-          sentence: 'S__fa',
-          correct: 'o',
-          options: ['o', 'a', 'u'],
-          feedback: { success: { title: 'Isso!', text: 'Sofa - igual ao português, só muda o acento.' } }
+          sentence: 'I sit on the ___.',
+          correct: 'sofa',
+          options: ['sofa', 'table', 'lamp'],
+          feedback: { success: { title: 'Isso!', text: 'Sofa - onde você senta para relaxar.' } }
         },
         {
           type: 'multiple_choice',

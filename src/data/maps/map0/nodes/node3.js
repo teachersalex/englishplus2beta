@@ -97,13 +97,16 @@ export const node3Data = {
           feedback: { success: { title: 'Ótimo!', text: 'Essas são parecidas com português!' } }
         },
         {
-          type: 'fill_gap',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Sequência',
-          instruction: 'Qual letra vem depois?',
-          sentence: 'A, B, C, __',
-          correct: 'D',
-          options: ['D', 'E', 'F'],
+          instruction: 'Qual letra vem depois de A, B, C?',
+          question: 'A, B, C, ___',
+          options: [
+            { text: 'D', correct: true },
+            { text: 'E', correct: false },
+            { text: 'F', correct: false },
+          ],
           feedback: { success: { title: 'Isso!', text: 'A, B, C, D...' } }
         },
         {
@@ -158,22 +161,30 @@ export const node3Data = {
           feedback: { success: { title: 'Perfeito!', text: '"Meu nome é..." - Essencial!' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Soletrar BOB',
-          instruction: 'Soletre o nome "Bob"',
-          words: ['B', 'O', 'B'],
-          correct: 'B O B',
-          feedback: { success: { title: 'Isso!', text: 'B-O-B. Bi-Ou-Bi.' } }
+          instruction: 'Como se soletra "Bob" em inglês?',
+          question: 'Soletrar: B-O-B',
+          options: [
+            { text: 'Bi - Ou - Bi', correct: true },
+            { text: 'Bê - Ó - Bê', correct: false },
+            { text: 'Be - O - Be', correct: false },
+          ],
+          feedback: { success: { title: 'Isso!', text: 'B-O-B = Bi-Ou-Bi.' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Prática',
           title: 'Soletrar ANA',
-          instruction: 'Soletre o nome "Ana"',
-          words: ['A', 'N', 'A'],
-          correct: 'A N A',
-          feedback: { success: { title: 'Ótimo!', text: 'A-N-A. Ei-Én-Ei.' } }
+          instruction: 'Como se soletra "Ana" em inglês?',
+          question: 'Soletrar: A-N-A',
+          options: [
+            { text: 'Ei - Én - Ei', correct: true },
+            { text: 'Ah - Ene - Ah', correct: false },
+            { text: 'A - N - A', correct: false },
+          ],
+          feedback: { success: { title: 'Ótimo!', text: 'A-N-A = Ei-Én-Ei.' } }
         },
         {
           type: 'error_detective',

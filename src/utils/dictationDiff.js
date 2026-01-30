@@ -3,7 +3,7 @@
 // ============================================
 // ALGORITMO DE CORREÇÃO DE DITADO
 // Wagner-Fischer (Edit Distance) + Semantic Expansion
-// v10.8 — Números expandidos (0-59) para horários
+// v10.9 — Sinônimos unidirecionais (forma canônica)
 // ============================================
 
 // Mapa de contrações EXTENDIDO (A1-B2 coverage)
@@ -42,23 +42,84 @@ const CONTRACTIONS = {
   "lets": "let us", "ill": "i will", "youll": "you will", "ive": "i have"
 }
 
-// [v10.7] SINÔNIMOS ACEITÁVEIS
+// [v10.9] SINÔNIMOS UNIDIRECIONAIS
+// Todas as variantes apontam para a forma CANÔNICA
+// A forma canônica NÃO está no mapa (não aponta para nada)
 const SYNONYMS = {
+  // okay é canônico
   'ok': 'okay',
   'k': 'okay',
   'okei': 'okay',
+  
+  // yes é canônico
   'yeah': 'yes',
   'yep': 'yes',
   'yup': 'yes',
+  
+  // no é canônico
   'nope': 'no',
   'nah': 'no',
-  'please': 'pls',
+  
+  // please é canônico
   'pls': 'please',
+  'plz': 'please',
+  
+  // because é canônico
   'cos': 'because',
   'cause': 'because',
   'cuz': 'because',
+  'bc': 'because',
+  
+  // until é canônico
   'till': 'until',
-  'til': 'until'
+  'til': 'until',
+  
+  // though é canônico
+  'tho': 'though',
+  
+  // through é canônico
+  'thru': 'through',
+  
+  // night é canônico
+  'nite': 'night',
+  
+  // right é canônico
+  'rite': 'right',
+  
+  // thanks é canônico
+  'thx': 'thanks',
+  'tks': 'thanks',
+  
+  // you é canônico
+  'u': 'you',
+  
+  // are é canônico (em contexto de "r u")
+  'r': 'are',
+  
+  // your é canônico
+  'ur': 'your',
+  
+  // tomorrow é canônico
+  'tmrw': 'tomorrow',
+  'tmr': 'tomorrow',
+  
+  // today é canônico
+  'tdy': 'today',
+  
+  // probably é canônico
+  'prolly': 'probably',
+  
+  // about é canônico
+  'bout': 'about',
+  
+  // kind of é canônico
+  'kinda': 'kind of',
+  
+  // sort of é canônico
+  'sorta': 'sort of',
+  
+  // out of é canônico
+  'outta': 'out of',
 }
 
 // [v10.3] MAPA DE VARIAÇÕES DE NOMES

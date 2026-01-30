@@ -48,8 +48,6 @@ export default function DiamondCelebrationModal({ isOpen, onComplete }) {
     []
   )
   
-  if (!isOpen) return null
-
   const handleBackdropClick = () => {
     if (phase >= 4) {
       onComplete()

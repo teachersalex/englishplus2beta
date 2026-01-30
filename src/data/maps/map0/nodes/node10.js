@@ -172,12 +172,16 @@ export const node10Data = {
           feedback: { success: { title: 'Ótimo!', text: '"I" pede "am". Sempre!' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Final',
           title: 'Soletrar ENGLISH',
-          instruction: 'Soletre a palavra mais importante',
-          words: ['E', 'N', 'G', 'L', 'I', 'S', 'H'],
-          correct: 'E N G L I S H',
+          instruction: 'Como começa a soletração de "English"?',
+          question: 'As 3 primeiras letras de E-N-G-L-I-S-H:',
+          options: [
+            { text: 'I - Én - Dgi', correct: true },
+            { text: 'É - Ene - Gê', correct: false },
+            { text: 'E - N - G', correct: false },
+          ],
           feedback: { success: { title: 'Excelente!', text: 'Você sabe soletrar ENGLISH!' } }
         },
         {

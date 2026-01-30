@@ -19,6 +19,7 @@ export function FillGap({ data, onComplete }) {
   };
 
   const handleVerify = () => {
+    if (engine.showResult) return;
     if (!selected) return;
     engine.verify(selected === correct);
   };
@@ -53,7 +54,7 @@ export function FillGap({ data, onComplete }) {
         <EngineButton
           label="VERIFICAR"
           onClick={handleVerify}
-          disabled={!selected}
+          disabled={engine.showResult || !selected}
         />
       }
       overlay={

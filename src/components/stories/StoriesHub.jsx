@@ -190,7 +190,8 @@ export default function StoriesHub({ onSelectSeries, onBack, progress }) {
     const storyProgress = progress?.storyProgress?.[seriesId];
     if (!storyProgress) return { completed: 0, total: 0, hasDiamond: false, average: null };
     
-    const allSeries = [...(seriesByLevel.pillars || []), ...(seriesByLevel.starter || [])];
+    // FIX: Pega TODAS as séries de todos os níveis, não só pillars/starter
+    const allSeries = Object.values(seriesByLevel).flat();
     const series = allSeries.find(s => s.id === seriesId);
     const total = series?.episodes?.length || 0;
     // FIX: Corrigido path - era bestScores, agora é scores

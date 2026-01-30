@@ -57,13 +57,17 @@ export const node6Data = {
           feedback: { success: { title: 'BEHIND!', text: 'O gato está atrás do sofá.' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Fechamento',
-          title: 'Soletrar',
-          instruction: 'Ordene as letras',
-          words: ['B', 'E', 'T', 'W', 'E', 'E', 'N'],
-          correct: 'B E T W E E N',
-          feedback: { success: { title: 'Isso!', text: 'BETWEEN - 7 letras.' } }
+          title: 'A TV e o sofá',
+          instruction: 'A TV está atrás do sofá.',
+          question: 'The TV is ___ the sofa.',
+          options: [
+            { text: 'behind', correct: true },
+            { text: 'between', correct: false },
+            { text: 'in front of', correct: false },
+          ],
+          feedback: { success: { title: 'BEHIND!', text: 'A TV está atrás do sofá.' } }
         }
       ]
     },

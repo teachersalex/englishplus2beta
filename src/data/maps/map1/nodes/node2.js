@@ -1,193 +1,196 @@
 /**
- * Node 2: O Vizinho
- * Tema: Verb To Be - He/She/It
+ * Node 2: A Despedida
+ * Tema: Goodbyes
  */
 export const node2Data = {
   id: 2,
-  title: 'O Vizinho',
-  theme: 'Verb To Be - He/She/It',
-  lore: 'Você sai de casa e encontra alguém na estrada. É hora de falar sobre outras pessoas.',
-  tip: 'He, She e It são os "primos". Todos usam o mesmo verbo: IS.',
+  title: 'A Despedida',
+  theme: 'Goodbyes',
+  lore: 'O dia acabou. É hora de ir descansar. Mas como se despedir sem parecer rude?',
+  tip: '"Good Night" não é "Boa Noite" de chegada. É só quando você vai EMBORA ou DORMIR.',
   
   levels: [
     {
-      id: '1_2_bronze',
-      title: 'A Família',
+      id: '0_2_bronze',
+      title: 'Saindo',
       color: '#cd7f32',
       activities: [
         {
           type: 'vocab_match',
           label: 'Aquecimento',
-          title: 'Vocabulário de família',
-          instruction: 'Conecte os familiares',
+          title: 'Formas de tchau',
+          instruction: 'Conecte português ↔ inglês',
           pairs: [
-            { portuguese: 'Mãe', english: 'Mother' },
-            { portuguese: 'Pai', english: 'Father' },
-            { portuguese: 'Irmão', english: 'Brother' },
-            { portuguese: 'Irmã', english: 'Sister' },
+            { portuguese: 'Tchau', english: 'Bye' },
+            { portuguese: 'Adeus', english: 'Goodbye' },
+            { portuguese: 'Até logo', english: 'See you' },
           ],
-          feedback: { success: { title: 'Perfeito!', text: 'Família em inglês!' } }
+          feedback: { success: { title: 'Perfeito!', text: 'Várias formas de dizer tchau.' } }
         },
         {
-          type: 'category_sort',
-          label: 'Introdução',
-          title: 'He ou She?',
-          instruction: 'Classifique corretamente',
-          categories: [
-            { id: 'he', name: 'He' },
-            { id: 'she', name: 'She' }
-          ],
-          items: [
-            { id: 1, text: 'Father', category: 'he' },
-            { id: 2, text: 'Sister', category: 'she' },
-            { id: 3, text: 'Husband', category: 'he' },
-            { id: 4, text: 'Wife', category: 'she' }
-          ],
-          feedback: { success: { title: 'Ótimo!', text: 'Gênero dominado!' } }
-        },
-        {
-          type: 'fill_gap',
+          type: 'multiple_choice',
           label: 'Prática',
-          title: 'Complete',
-          instruction: 'Escolha o verbo correto',
-          sentence: 'This ___ my mother.',
-          correct: 'is',
-          options: ['is', 'are'],
-          feedback: { success: { title: 'Isso!', text: 'Mother é singular. Use IS.' } }
+          title: 'Formal ou casual?',
+          instruction: 'Qual despedida é mais casual?',
+          question: 'Você se despede de um amigo. O que diz?',
+          options: [
+            { text: 'Goodbye', correct: false },
+            { text: 'Bye', correct: true },
+            { text: 'Farewell', correct: false },
+          ],
+          feedback: { success: { title: 'Isso!', text: '"Bye" é curto e casual, perfeito pra amigos.' } }
         },
         {
           type: 'true_false',
           label: 'Prática',
-          title: 'Certo ou Errado?',
-          instruction: 'Analise a frase',
-          statement: 'This is my friend.',
+          title: 'Verdadeiro ou Falso?',
+          instruction: 'Analise a afirmação',
+          statement: '"Goodbye" é mais formal que "Bye".',
           correct: true,
-          feedback: { success: { title: 'Correto!', text: 'This is...' } }
+          feedback: { success: { title: 'Correto!', text: '"Goodbye" é completo e formal. "Bye" é casual.' } }
         },
         {
           type: 'multiple_choice',
-          label: 'Fechamento',
-          title: 'Quem é ele?',
-          instruction: 'Apontando para o pai:',
-          question: 'Escolha a correta:',
+          label: 'Prática',
+          title: 'Contexto',
+          instruction: 'O que você diz ao sair?',
+          question: 'Você está indo embora. O que diz?',
           options: [
-            { text: 'She is my father.', correct: false },
-            { text: 'He is my father.', correct: true },
+            { text: 'Hello', correct: false },
+            { text: 'Goodbye', correct: true },
+            { text: 'Good morning', correct: false },
           ],
-          feedback: { success: { title: 'He!', text: 'Pai é homem, use He.' } }
+          feedback: { success: { title: 'Isso!', text: 'Saindo = Goodbye.' } }
+        },
+        {
+          type: 'fill_gap',
+          label: 'Fechamento',
+          title: 'Complete',
+          instruction: 'Palavra única que significa "Adeus"',
+          sentence: 'Good___.',
+          correct: 'bye',
+          options: ['bye', 'morning', 'afternoon'],
+          feedback: { success: { title: 'Perfeito!', text: 'Goodbye = Adeus. Uma palavra só!' } }
         }
       ]
     },
     {
-      id: '1_2_silver',
-      title: 'Apresentações',
+      id: '0_2_silver',
+      title: 'O Sono',
       color: '#c0c0c0',
       activities: [
         {
-          type: 'sentence_builder',
+          type: 'vocab_match',
           label: 'Aquecimento',
-          title: 'Apresente sua mãe',
-          instruction: '"Esta é minha mãe."',
-          words: ['This', 'is', 'my', 'mother.'],
-          correct: 'This is my mother.',
-          feedback: { success: { title: 'Formal e correto!', text: '' } }
+          title: 'Hora de dormir',
+          instruction: 'Conecte a despedida',
+          pairs: [
+            { portuguese: 'Boa noite (dormir)', english: 'Good night' },
+            { portuguese: 'Durma bem', english: 'Sleep well' },
+            { portuguese: 'Bons sonhos', english: 'Sweet dreams' },
+          ],
+          feedback: { success: { title: 'Ótimo!', text: 'Formas carinhosas de se despedir à noite.' } }
         },
         {
-          type: 'fill_gap',
-          label: 'Introdução',
-          title: 'Plural (Eles)',
-          instruction: 'Complete com o verbo correto',
-          sentence: 'They ___ my parents.',
-          correct: 'are',
-          options: ['is', 'am', 'are'],
-          feedback: { success: { title: 'They Are!', text: 'Plural sempre pede Are.' } }
-        },
-        {
-          type: 'error_detective',
+          type: 'true_false',
           label: 'Prática',
-          title: 'Onde está o erro?',
-          instruction: 'Encontre a palavra errada',
-          sentence: 'He are my brother.',
-          errorWord: 'are',
-          correction: 'is',
-          feedback: { success: { title: 'He Is!', text: 'He nunca combina com Are.' } }
+          title: 'Cuidado!',
+          instruction: 'Analise a situação',
+          statement: 'Você chega na festa às 21h e diz "Good night".',
+          correct: false,
+          feedback: { success: { title: 'Correto!', text: 'Good night é despedida! Para chegar, use "Good evening".' } }
         },
         {
           type: 'sentence_builder',
           label: 'Prática',
-          title: 'Profissão dela',
-          instruction: '"Minha mãe é dentista."',
-          words: ['My', 'mother', 'is', 'a', 'dentist.'],
-          correct: 'My mother is a dentist.',
-          feedback: { success: { title: 'Boa estrutura!', text: 'Sujeito + Verbo + Artigo + Profissão.' } }
+          title: 'Monte a frase',
+          instruction: '"Boa noite, mãe."',
+          words: ['Good', 'night,', 'mom.'],
+          correct: 'Good night, mom.',
+          feedback: { success: { title: 'Perfeito!', text: 'Boa noite para a mãe antes de dormir.' } }
         },
         {
           type: 'multiple_choice',
-          label: 'Fechamento',
-          title: 'Ela é legal?',
-          instruction: 'Descrevendo a irmã:',
-          question: 'Escolha a correta:',
+          label: 'Prática',
+          title: 'Classificar',
+          instruction: 'Esta é chegada ou saída?',
+          question: '"Good night" é usado para:',
           options: [
-            { text: 'She is cool.', correct: true },
-            { text: 'She are cool.', correct: false },
-            { text: 'She am cool.', correct: false },
+            { text: 'Chegar em algum lugar', correct: false },
+            { text: 'Ir embora ou dormir', correct: true },
+            { text: 'Qualquer situação à noite', correct: false },
           ],
-          feedback: { success: { title: 'Perfeito!', text: 'She is + Adjetivo.' } }
+          feedback: { success: { title: 'Excelente!', text: 'Good night = despedida ou hora de dormir.' } }
+        },
+        {
+          type: 'fill_gap',
+          label: 'Fechamento',
+          title: 'Desejo',
+          instruction: 'Complete o desejo',
+          sentence: 'Have a nice ___!',
+          correct: 'day',
+          options: ['day', 'you', 'bye'],
+          feedback: { success: { title: 'Isso!', text: '"Have a nice day" = Tenha um bom dia!' } }
         }
       ]
     },
     {
-      id: '1_2_gold',
-      title: 'O Grupo',
+      id: '0_2_gold',
+      title: 'Até Logo',
       color: '#ffd700',
       activities: [
         {
-          type: 'error_detective',
+          type: 'sentence_builder',
           label: 'Desafio',
-          title: 'Erro de brasileiro',
-          instruction: 'Encontre a palavra errada',
-          sentence: 'This is she car.',
-          errorWord: 'she',
-          correction: 'her',
-          feedback: { success: { title: 'Isso!', text: '"She" é "Ela". "Dela" é "HER".' } }
+          title: 'Até mais tarde',
+          instruction: '"Até mais tarde."',
+          words: ['See', 'you', 'later.'],
+          correct: 'See you later.',
+          feedback: { success: { title: 'Perfeito!', text: '"Vejo você mais tarde" - casual e amigável.' } }
         },
         {
-          type: 'fill_gap',
+          type: 'vocab_match',
+          label: 'Prática',
+          title: 'Variações',
+          instruction: 'Conecte as despedidas',
+          pairs: [
+            { portuguese: 'Até mais', english: 'See you' },
+            { portuguese: 'Até amanhã', english: 'See you tomorrow' },
+            { portuguese: 'Até logo', english: 'See you later' },
+          ],
+          feedback: { success: { title: 'Ótimo!', text: 'Várias formas de "até"!' } }
+        },
+        {
+          type: 'error_detective',
           label: 'Desafio',
-          title: 'Pergunta',
-          instruction: 'Complete a pergunta',
-          sentence: '___ they from Brazil?',
-          correct: 'Are',
-          options: ['Is', 'Am', 'Are'],
-          feedback: { success: { title: 'Are they...?', text: 'Pergunta no plural.' } }
+          title: 'Erro de lógica',
+          instruction: 'Encontre o erro',
+          sentence: 'See you yesterday.',
+          errorWord: 'yesterday',
+          correction: 'later',
+          feedback: { success: { title: 'Excelente!', text: 'Despedida é futuro, não passado!' } }
         },
         {
           type: 'sentence_builder',
           label: 'Prática',
-          title: 'Frase longa',
-          instruction: '"Meu pai é alto e bonito."',
-          words: ['My', 'father', 'is', 'tall', 'and', 'handsome.'],
-          correct: 'My father is tall and handsome.',
-          feedback: { success: { title: 'Uau!', text: 'Dois adjetivos na mesma frase.' } }
+          title: 'Até amanhã',
+          instruction: '"Até amanhã."',
+          words: ['See', 'you', 'tomorrow.'],
+          correct: 'See you tomorrow.',
+          feedback: { success: { title: 'Perfeito!', text: 'Até amanhã!' } }
         },
         {
-          type: 'error_detective',
-          label: 'Desafio',
-          title: 'Ache o intruso',
-          instruction: 'Encontre a palavra errada',
-          sentence: 'My parents is at home.',
-          errorWord: 'is',
-          correction: 'are',
-          feedback: { success: { title: 'Parents = Eles!', text: 'Parents são "Pais". Use Are.' } }
-        },
-        {
-          type: 'true_false',
+          type: 'multiple_choice',
           label: 'Fechamento',
-          title: 'Desafio de Lógica',
-          instruction: 'Analise a frase',
-          statement: 'My brother is my father\'s son.',
-          correct: true,
-          feedback: { success: { title: 'Verdadeiro!', text: 'O irmão é o filho do pai.' } }
+          title: 'Tradução',
+          instruction: 'Como dizer "Até amanhã"?',
+          question: 'Traduza: "Até amanhã"',
+          options: [
+            { text: 'See you yesterday', correct: false },
+            { text: 'See you tomorrow', correct: true },
+            { text: 'See you night', correct: false },
+          ],
+          feedback: { success: { title: 'Muito bem!', text: 'Tomorrow = amanhã.' } }
         }
       ]
     }

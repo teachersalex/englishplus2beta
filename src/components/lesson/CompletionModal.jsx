@@ -51,9 +51,9 @@ export function CompletionModal({
               Progresso: {currentRound}/{totalRounds}
             </p>
 
-            {/* Progress dots */}
+            {/* Progress dots - dinâmico baseado em totalRounds */}
             <div className="flex justify-center gap-2 mb-5">
-              {[1, 2, 3].map((round) => (
+              {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => (
                 <div
                   key={round}
                   className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${

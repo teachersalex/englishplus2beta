@@ -15,6 +15,10 @@ export function MapNode({ node, state, progress, onClick, positionX, isActive, n
   
   const nodeSize = node.isBoss ? 72 : 60;
   
+  // Total de steps dinâmico (suporta nodes com quantidades diferentes)
+  const totalSteps = node?.levels?.length ?? 3;
+  const safeProgress = Math.max(0, Math.min(totalSteps, Number(progress ?? 0)));
+  
   const displayTitle = node.isBoss && isLocked ? '???' : node.title;
   const displayTheme = node.isBoss && isLocked ? '???' : node.theme;
   
@@ -69,7 +73,7 @@ export function MapNode({ node, state, progress, onClick, positionX, isActive, n
             />
           )}
           
-          {isCurrent && progress > 0 && (
+          {isCurrent && safeProgress > 0 && (
             <svg 
               className="absolute"
               style={{ width: nodeSize + 12, height: nodeSize + 12, transform: 'rotate(-90deg)' }}
@@ -91,7 +95,7 @@ export function MapNode({ node, state, progress, onClick, positionX, isActive, n
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={Math.PI * (nodeSize + 4)}
-                strokeDashoffset={Math.PI * (nodeSize + 4) * (1 - progress / 3)}
+                strokeDashoffset={Math.PI * (nodeSize + 4) * (1 - safeProgress / totalSteps)}
                 style={{ transition: 'stroke-dashoffset 0.3s ease' }}
               />
             </svg>
@@ -150,7 +154,7 @@ export function MapNode({ node, state, progress, onClick, positionX, isActive, n
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               }}
             >
-              {progress}/3
+              {safeProgress}/{totalSteps}
             </motion.div>
           )}
 

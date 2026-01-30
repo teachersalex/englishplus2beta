@@ -4,9 +4,15 @@
  * "Entre dois pontos, a linha curva é a mais bela."
  *  — Oscar Niemeyer
  */
+import { useId } from 'react';
 import { COLORS } from '../../tokens';
 
 export function NodePath({ fromX, toX, isCompleted, isNext }) {
+  const id = useId();
+  const gradCompleted = `pathGradientCompleted-${id}`;
+  const gradActive = `pathGradientActive-${id}`;
+  const glow = `pathGlow-${id}`;
+
   const height = 50;
   const width = 200;
   const centerX = width / 2;
@@ -17,16 +23,16 @@ export function NodePath({ fromX, toX, isCompleted, isNext }) {
     <div className="flex justify-center relative z-10" style={{ height }}>
       <svg width={width} height={height} className="overflow-visible">
         <defs>
-          <linearGradient id="pathGradientCompleted" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={gradCompleted} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={COLORS.success} />
             <stop offset="100%" stopColor="#059669" />
           </linearGradient>
-          <linearGradient id="pathGradientActive" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={gradActive} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={COLORS.primary} />
             <stop offset="50%" stopColor="#8B5CF6" />
             <stop offset="100%" stopColor={COLORS.primary} />
           </linearGradient>
-          <filter id="pathGlow">
+          <filter id={glow}>
             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
@@ -48,12 +54,12 @@ export function NodePath({ fromX, toX, isCompleted, isNext }) {
         <path
           d={`M ${startX} 0 C ${startX} ${height * 0.5}, ${endX} ${height * 0.5}, ${endX} ${height}`}
           fill="none"
-          stroke={isCompleted ? 'url(#pathGradientCompleted)' : isNext ? 'url(#pathGradientActive)' : COLORS.border}
+          stroke={isCompleted ? `url(#${gradCompleted})` : isNext ? `url(#${gradActive})` : COLORS.border}
           strokeWidth={isCompleted || isNext ? 5 : 4}
-          strokeDasharray={isCompleted || isNext ? "none" : "8 8"}
+          strokeDasharray={isCompleted || isNext ? undefined : "8 8"}
           strokeLinecap="round"
           opacity={isCompleted || isNext ? 1 : 0.4}
-          filter={isCompleted || isNext ? 'url(#pathGlow)' : 'none'}
+          filter={isCompleted || isNext ? `url(#${glow})` : undefined}
         />
         
         {/* Pontos decorativos no caminho ativo */}

@@ -11,16 +11,23 @@
  * CHAVES DE PROGRESSO:
  * - Formato: map{mapId}:node{nodeId}-{levelId}
  * - Exemplo: map0:node1-beginner, map1:node3-intermediate
+ * 
+ * LEVEL:
+ * - Sempre derivado de XP: Math.floor(xp / 500) + 1
+ * - Não é persistido separadamente
+ * 
+ * IDEMPOTÊNCIA:
+ * - completeLevel usa transaction para evitar double reward
+ * - Se level já foi completado, não dá XP/diamante novamente
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { doc, onSnapshot, setDoc, updateDoc, increment, arrayUnion, arrayRemove, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { checkNewAchievements } from '../data/achievementsData';
 
 const INITIAL_PROGRESS = {
   xp: 0,
-  level: 1,
   streak: 0,
   diamonds: 0,
   lastActivity: null,
@@ -30,10 +37,17 @@ const INITIAL_PROGRESS = {
   pendingAchievements: [],
 };
 
+// XP por level (derivado, não persistido)
+const XP_PER_LEVEL = 500;
+const calculateLevel = (xp) => Math.floor(xp / XP_PER_LEVEL) + 1;
+
 export function useProgress(user) {
   const userId = user?.uid;
   const [progress, setProgress] = useState(INITIAL_PROGRESS);
   const [loading, setLoading] = useState(true);
+
+  // Level é sempre derivado de XP
+  const level = useMemo(() => calculateLevel(progress.xp), [progress.xp]);
 
   // Listener em tempo real
   useEffect(() => {
@@ -46,7 +60,10 @@ export function useProgress(user) {
     
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
-        setProgress({ ...INITIAL_PROGRESS, ...snapshot.data() });
+        const data = snapshot.data();
+        // Remove 'level' do Firestore se existir (migração silenciosa)
+        const { level: _, ...cleanData } = data;
+        setProgress({ ...INITIAL_PROGRESS, ...cleanData });
       } else {
         const initialData = {
           ...INITIAL_PROGRESS,
@@ -71,7 +88,13 @@ export function useProgress(user) {
     const earned = updatedProgress.earnedAchievements || progress.earnedAchievements || [];
     const pending = updatedProgress.pendingAchievements || progress.pendingAchievements || [];
     
-    const newlyUnlocked = checkNewAchievements(updatedProgress, earned, pending);
+    // Adiciona level derivado para checagem de achievements
+    const progressWithLevel = {
+      ...updatedProgress,
+      level: calculateLevel(updatedProgress.xp),
+    };
+    
+    const newlyUnlocked = checkNewAchievements(progressWithLevel, earned, pending);
     
     if (newlyUnlocked.length === 0) return [];
     
@@ -150,52 +173,88 @@ export function useProgress(user) {
 
   /**
    * Completa um level e detecta conquistas
+   * IDEMPOTENTE: usa transaction para evitar double reward
    */
   const completeLevel = useCallback(async (mapId, nodeId, levelId, result) => {
-    if (!userId) return { newlyUnlocked: [] };
+    if (!userId) return { newlyUnlocked: [], isFirstCompletion: false };
     
     const key = `map${mapId}:node${nodeId}-${levelId}`;
     const xpGained = result.xpEarned || 0;
     const earnedDiamond = result.earnedDiamond || false;
     const docRef = doc(db, 'users', userId);
 
-    const updates = {
-      [`completedLevels.${key}`]: {
-        accuracy: result.accuracy,
-        xp: xpGained,
-        completedAt: new Date().toISOString(),
-      },
-      xp: increment(xpGained),
-      lastActivity: new Date().toISOString(),
-    };
+    // Transaction para garantir idempotência
+    const transactionResult = await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error('User document does not exist');
+      }
+      
+      const currentData = docSnap.data();
+      const alreadyCompleted = !!currentData.completedLevels?.[key];
+      
+      // Se já completou, não dá recompensa novamente
+      if (alreadyCompleted) {
+        return {
+          isFirstCompletion: false,
+          newXP: currentData.xp,
+          newDiamonds: currentData.diamonds,
+        };
+      }
+      
+      // Primeira vez completando — dá recompensa
+      const newXP = (currentData.xp || 0) + xpGained;
+      const newDiamonds = (currentData.diamonds || 0) + (earnedDiamond ? 1 : 0);
+      
+      const updates = {
+        [`completedLevels.${key}`]: {
+          accuracy: result.accuracy,
+          xp: xpGained,
+          completedAt: new Date().toISOString(),
+        },
+        xp: newXP,
+        diamonds: newDiamonds,
+        lastActivity: new Date().toISOString(),
+      };
+      
+      transaction.update(docRef, updates);
+      
+      return {
+        isFirstCompletion: true,
+        newXP,
+        newDiamonds,
+      };
+    });
 
-    if (earnedDiamond) {
-      updates.diamonds = increment(1);
-    }
+    const { isFirstCompletion, newXP, newDiamonds } = transactionResult;
+    const newLevel = calculateLevel(newXP);
+    const oldLevel = calculateLevel(progress.xp);
+    const leveledUp = newLevel > oldLevel;
 
-    await updateDoc(docRef, updates);
-
-    const newXP = progress.xp + xpGained;
-    const newLevel = Math.floor(newXP / 500) + 1;
-    
-    if (newLevel > progress.level) {
-      await updateDoc(docRef, { level: newLevel });
-    }
-
+    // Prepara progress atualizado para detecção de achievements
     const updatedProgress = {
       ...progress,
       xp: newXP,
-      level: newLevel,
-      diamonds: (progress.diamonds || 0) + (earnedDiamond ? 1 : 0),
+      diamonds: newDiamonds,
       completedLevels: {
         ...progress.completedLevels,
         [key]: { accuracy: result.accuracy, xp: xpGained },
       },
     };
 
-    const newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
+    // Detecta achievements apenas se foi primeira completação
+    let newlyUnlocked = [];
+    if (isFirstCompletion) {
+      newlyUnlocked = await detectAndQueueAchievements(updatedProgress);
+    }
 
-    return { newlyUnlocked, newLevel };
+    return { 
+      newlyUnlocked, 
+      newLevel, 
+      leveledUp,
+      isFirstCompletion,
+    };
   }, [userId, progress, detectAndQueueAchievements]);
 
   // === STORY PROGRESS ===
@@ -271,7 +330,10 @@ export function useProgress(user) {
   }, [userId, user?.email, user?.displayName]);
 
   return {
-    progress,
+    progress: {
+      ...progress,
+      level, // Level derivado, não do Firestore
+    },
     loading,
     
     // Node (agora com mapId)
@@ -292,5 +354,8 @@ export function useProgress(user) {
     // Utilities
     earnDiamond,
     resetProgress,
+    
+    // Helpers
+    calculateLevel,
   };
 }

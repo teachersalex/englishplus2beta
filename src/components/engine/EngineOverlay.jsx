@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { COLORS, SHADOWS } from '../../tokens';
+import { COLORS } from '../../tokens';
 import { EngineButton } from './EngineButton';
 
 /**
@@ -138,6 +138,7 @@ export function EngineOverlay({
             backgroundColor: COLORS.surface, 
             boxShadow: '0 -10px 40px rgba(0,0,0,0.12)',
             borderTop: `4px solid ${success ? COLORS.success : COLORS.error}`,
+            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
           }}
         >
           <div className="max-w-md mx-auto">

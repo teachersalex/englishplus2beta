@@ -23,7 +23,7 @@ export default function SplashScreen({ onFinish }) {
     const timer = setTimeout(() => {
       if (!finishedRef.current) {
         finishedRef.current = true;
-        onFinish();
+        onFinish?.();
       }
     }, 2500);
     

@@ -170,7 +170,7 @@ export default function MapScreen({ mapId = 0, onSelectNode, getNodeState, getNo
       <div 
         ref={scrollRef}
         className="overflow-y-auto pb-40 pt-12 relative z-10"
-        style={{ height: 'calc(100vh - 80px)' }}
+        style={{ height: 'calc(100dvh - 80px)' }}
       >
         <div className="flex flex-col items-center px-4">
           {nodesReversed.map((node, index) => {

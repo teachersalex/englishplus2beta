@@ -54,13 +54,17 @@ export const node8Data = {
           feedback: { success: { title: 'FALSO!', text: 'Nativos usam "John\'s car", não "the car of John".' } }
         },
         {
-          type: 'sentence_builder',
+          type: 'multiple_choice',
           label: 'Fechamento',
-          title: 'Soletrar',
-          instruction: 'Ordene os elementos',
-          words: ['B', 'o', 'b', "'", 's'],
-          correct: "B o b ' s",
-          feedback: { success: { title: 'Bob\'s!', text: 'Do Bob.' } }
+          title: 'Tradução',
+          instruction: 'Como se escreve "Do Bob" em inglês?',
+          question: 'Traduza: "Do Bob"',
+          options: [
+            { text: "Bob's", correct: true },
+            { text: 'Bob is', correct: false },
+            { text: 'of Bob', correct: false },
+          ],
+          feedback: { success: { title: "Bob's!", text: "O apóstrofo S indica posse: Bob's = Do Bob." } }
         }
       ]
     },
@@ -140,12 +144,12 @@ export const node8Data = {
         {
           type: 'error_detective',
           label: 'Desafio',
-          title: 'Ordem invertida',
+          title: 'Erro de apóstrofo',
           instruction: 'Encontre a palavra errada',
-          sentence: "The house Alex's is big.",
-          errorWord: 'house',
+          sentence: "This is Alexs book.",
+          errorWord: 'Alexs',
           correction: "Alex's",
-          feedback: { success: { title: 'Pegou!', text: 'A ordem é DONO + COISA: "Alex\'s house", não "house Alex\'s".' } }
+          feedback: { success: { title: 'Pegou!', text: 'Faltou o apóstrofo! O correto é "Alex\'s book" (do Alex).' } }
         },
         {
           type: 'error_detective',

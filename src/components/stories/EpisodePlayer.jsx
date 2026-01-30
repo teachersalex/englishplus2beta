@@ -94,7 +94,7 @@ export default function EpisodePlayer({
     );
 
     const willEarnDiamond = completedCount >= totalEpisodes && 
-                            currentAverage >= 90 && 
+                            currentAverage >= thresholds.diamond && 
                             !storyProgress.hasDiamond;
     
     // Prepara dados do modal (mas NÃO abre ainda)
